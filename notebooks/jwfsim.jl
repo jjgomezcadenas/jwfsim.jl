@@ -97,21 +97,12 @@ md"""
 
 Ingredientes:
 
-1. Molecular density (number of molecules/unit volume). Tipically the input is molecular concentration in M (mol/liter), e.g, micromolar = 10^-6 mol/l 
+1. Molecules per micron square (mpm2). The number of molecules in each area of $\mu$m x $\mu$m.
 2. Target surface, e.g, the surface where the molecules are deposited (tipically 1cm2)
 """
 
-# ╔═╡ b65232d2-f8ed-4afc-969a-417d78405477
-md"""
-## Molecular concentration and target length
-
-- It is conveniente to use -log(ρ), where ρ is the molecular concentration (in M), thus, for example, to specifiy 1 μM (10^-6 M), -log(ρ) = 6
-
-- Also convenient to assume that the target is a square slice, and specify just its longitudinal dimensions (e.g, in cm)
-"""
-
 # ╔═╡ abe2369a-8a9a-4e0e-9707-4184e6d6f339
-md""" Select -log concentration (-log(ρ)) in M: $(@bind logr NumberField(1.0:15.0, default=5.0))"""
+md""" Select the molecules per unit area (in molecules per $\mu$m$^2$): $(@bind logr NumberField(0.0:100.0, default=1.0))"""
 
 
 # ╔═╡ 55352380-ff6d-42f6-863a-e5de8cced158
@@ -143,10 +134,8 @@ function toncm3(r::Float64)
 	uconvert(cm^-3,10^-r*M*N_A)/cm^-3
 end
 
-# ╔═╡ de442740-e0c0-4b7c-93d4-07974858afb1
-md"""
-- The selected concentration correspondes to $(round((toncm3(logr)), sigdigits=3)) N/cm3 (N = molecules)
-"""
+# ╔═╡ 5ab2275a-a576-4c2a-ae01-23748092d51a
+uconvert(cm^-3,10^-5*M*N_A)
 
 # ╔═╡ cc6a3d4b-b032-4092-b29a-0f7b6854852b
 function toncm2(r::Float64, s::Float64)
@@ -157,12 +146,6 @@ end
 function tonpers(r::Float64, s::Float64, unit)
 	toncm2(r::Float64, s::Float64) / (uconvert(cm^-2, unit)/cm^-2)
 end
-
-# ╔═╡ 1dfc12c7-ad06-48f7-a4f4-7ed945db50b0
-md"""
-- The selected number of molecules is to $(round(toncm2(logr, scm), sigdigits=3)) N/cm2 (N = molecules)
-- This correspondes to $(round(tonpers(logr, scm, 1.0μm^-2))) N/μ^2
-"""
 
 # ╔═╡ 538477a1-748f-443c-a36b-cba2f1a7645b
 nmu2 = tonpers(logr, scm, 1.0μm^-2)
@@ -224,11 +207,8 @@ nmcm3(1e-12, 1.0) ≈ tonpers(12.0, 1.0, 1.0μm^-2)
 # ╠═40bcafee-88a9-4c7b-a611-d0599e4567e9
 # ╠═27b5dc4d-b688-4414-8fcb-97c4ef1d680d
 # ╠═790af81b-45ce-4fae-ab0b-7fb52b87a2af
-# ╠═b65232d2-f8ed-4afc-969a-417d78405477
 # ╠═abe2369a-8a9a-4e0e-9707-4184e6d6f339
-# ╠═de442740-e0c0-4b7c-93d4-07974858afb1
 # ╠═55352380-ff6d-42f6-863a-e5de8cced158
-# ╠═1dfc12c7-ad06-48f7-a4f4-7ed945db50b0
 # ╠═766d17b5-499a-4a28-8628-3031b023a851
 # ╠═c1b960ad-b7f5-46ff-985f-0f304bdb0a48
 # ╠═4153e45e-3973-4b37-adfc-49feda60e3a2
@@ -240,6 +220,7 @@ nmcm3(1e-12, 1.0) ≈ tonpers(12.0, 1.0, 1.0μm^-2)
 # ╠═a9873b66-6336-406f-a9b1-0fe8a1fc0dc3
 # ╠═c2289697-ab87-4f11-81e6-bee3439ca3cb
 # ╠═736f187e-e5c0-4458-8438-5860ad0f2f98
+# ╠═5ab2275a-a576-4c2a-ae01-23748092d51a
 # ╠═cc6a3d4b-b032-4092-b29a-0f7b6854852b
 # ╠═03bf3bfb-2ec3-4ffa-9e83-37e21634a59d
 # ╠═a988f5a4-ce60-4820-abea-3e3c79854d89
