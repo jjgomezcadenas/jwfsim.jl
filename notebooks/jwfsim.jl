@@ -161,7 +161,7 @@ end
 # ╔═╡ 1dfc12c7-ad06-48f7-a4f4-7ed945db50b0
 md"""
 - The selected number of molecules is to $(round(toncm2(logr, scm), sigdigits=3)) N/cm2 (N = molecules)
-- This correspondes to $(round(tonpers(logr, scm, 1.0μm^-2))) mol/μ^2
+- This correspondes to $(round(tonpers(logr, scm, 1.0μm^-2))) N/μ^2
 """
 
 # ╔═╡ 538477a1-748f-443c-a36b-cba2f1a7645b
