@@ -113,16 +113,16 @@ begin
 	stpxx=2
 	stpxy=2
 	binning=16
-	ssensx=stpxx*ntpxx/1000
-	ssenst=stpxy*ntpxy/1000
-	npxx=ntpxx/sqrt(binning)
-	npxy=ntpxy/sqrt(binning)
+	ssensx=stpxx*ntpxx
+	ssensy=stpxy*ntpxy
+	npxx=Int(ntpxx/sqrt(binning))
+	npxy=Int(ntpxy/sqrt(binning))
 	spxx=stpxx*sqrt(binning)
 	spxy=stpxy*sqrt(binning)
 	md"""
 - Pixel array = $ntpxx x $ntpxy
 - Pixel size = $stpxx x $stpxy (microns)
-- Sensor size= $ssensx x $ssensx (mm)
+- Sensor size= $ssensx x $ssensy (microns)
 - Binning= $binning
 - Pixel array (with binning) = $npxx x $npxy
 - Pixel size (with binning)= $spxx x $spxy (microns)
@@ -161,7 +161,7 @@ Y = range(-3*sby, 3*sby, length=100)
 Z = [pdf(p, [x,y]) for y in Y, x in X] # Note x-y "for" ordering
 p0=plot(X,Y,Z,st=:surface,xlabel="x (mm)",ylabel="y (mm)")
 
-p1=contourf(X, Y, Z, color=:viridis,xlabel="x (mm)",ylabel="y (mm)")
+p1=contourf(X, Y, Z, xlabel="x (mm)",ylabel="y (mm)")
 plot(p0,p1,size=(900,300))
 end
 
@@ -218,15 +218,51 @@ Once we have the mean value of the number of molecules per micron square (which 
 # ╔═╡ 766d17b5-499a-4a28-8628-3031b023a851
 md"""
 # Simulate image
-
-
-
 """
+
+# ╔═╡ a24aab57-2145-40de-bfd0-b768fef6d01d
+md"""
+## FOV
+The field of view of the camera scales with the magnification of the system. The size  of the field of view will be the sensor size divided by the magnfication, and the resolution will be given by the pixel size divided by the magnification.
+"""
+
+# ╔═╡ f7f4ba8b-e1a6-4632-a785-767b2bfb646f
+begin
+	sfovx=ssensx/mag
+	sfovy=ssensy/mag
+	spxfovx=spxx/mag
+	spxfovy=spxy/mag
+	md"""
+	- Size of the FOV = $sfovx x $sfovy (microns)
+	- Resolution = $spxfovx x $spxfovy (microns)
+	"""
+end
+
+# ╔═╡ 245c0ff7-22b2-47aa-969d-5cf4eca9831e
+md""" Molecule distribution in th FOV:"""
 
 # ╔═╡ c2289697-ab87-4f11-81e6-bee3439ca3cb
 md"""
 # Functions
 """
+
+# ╔═╡ 13b7f5db-8593-4511-b540-6f40e8eb3498
+function sample_array(poss,xran,yran,spxfovx,spxfovy)
+	possfov=[0,0]
+	xs=xran[1]:spxfovx:xran[2]
+	ys=yran[1]:spxfovy:yran[2]
+	for pos in eachrow(poss)
+		if (xran[1]<pos[1])&&(pos[1]<xran[2])
+			if (yran[1]<pos[2])&&(pos[1]<yran[2])
+				possfov=hcat(possfov,pos)
+			end
+		end
+	end
+	possfov=possfov[:,2:end]
+	x=possfov[1,:]
+	y=possfov[2,:]
+	fit(Histogram,(x, y), (xran[1]:spxfovx:xran[2], yran[1]:spxfovy:yran[2])).weights
+end
 
 # ╔═╡ 736f187e-e5c0-4458-8438-5860ad0f2f98
 function toncm3(r::Float64)
@@ -266,6 +302,24 @@ poss=smu*rand(Float64, (ntot,2))
 md"""
 Positions (x,y) in microns of the generated molecules are stored in 'poss' array
 """
+end
+
+# ╔═╡ d9e3e919-f1b6-4b0b-9e07-04d5855f3587
+md""" Select x0 position on the sample (in microns). It ranges from 0 to $smu : $(@bind x0 NumberField(0:smu, default=smu/2))"""
+
+# ╔═╡ 50c17b83-57f5-48dc-aaa1-22e16f627022
+md""" Select y0 position on the sample (in microns). It ranges from 0 to $smu : $(@bind y0 NumberField(0:smu, default=smu/2))"""
+
+# ╔═╡ 245205d3-ef94-46cf-ba0a-48810c201610
+begin
+xran=[x0-sfovx/2,x0+sfovx/2]
+yran=[y0-sfovy/2,y0+sfovy/2]
+end
+
+# ╔═╡ da45d069-b08d-4221-9e7d-32371090e94d
+begin
+possfov=sample_array(poss, xran, yran, spxfovx,spxfovy)
+heatmap(possfov)
 end
 
 # ╔═╡ 03bf3bfb-2ec3-4ffa-9e83-37e21634a59d
@@ -338,8 +392,16 @@ pois_rand
 # ╟─39ec5a5f-8e06-4143-8016-39fc9020aaa1
 # ╟─84e73dfd-a9a3-4bd4-93ce-2fc4a4e78f1b
 # ╠═b32cd1dd-a93a-41e6-a9cd-92bb9295f3ad
-# ╠═766d17b5-499a-4a28-8628-3031b023a851
+# ╟─766d17b5-499a-4a28-8628-3031b023a851
+# ╟─a24aab57-2145-40de-bfd0-b768fef6d01d
+# ╟─f7f4ba8b-e1a6-4632-a785-767b2bfb646f
+# ╟─d9e3e919-f1b6-4b0b-9e07-04d5855f3587
+# ╟─50c17b83-57f5-48dc-aaa1-22e16f627022
+# ╟─245205d3-ef94-46cf-ba0a-48810c201610
+# ╟─245c0ff7-22b2-47aa-969d-5cf4eca9831e
+# ╠═da45d069-b08d-4221-9e7d-32371090e94d
 # ╠═c2289697-ab87-4f11-81e6-bee3439ca3cb
+# ╠═13b7f5db-8593-4511-b540-6f40e8eb3498
 # ╠═736f187e-e5c0-4458-8438-5860ad0f2f98
 # ╠═5ab2275a-a576-4c2a-ae01-23748092d51a
 # ╠═cc6a3d4b-b032-4092-b29a-0f7b6854852b
