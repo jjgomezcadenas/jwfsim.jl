@@ -239,18 +239,52 @@ begin
 end
 
 # ╔═╡ 245c0ff7-22b2-47aa-969d-5cf4eca9831e
-md""" Molecule distribution in th FOV:"""
+md""" ### Molecule distribution in th FOV"""
+
+# ╔═╡ a45829e4-ac16-4e5d-9ce2-6007d62f37e8
+md""" ### Ilumination in th FOV"""
+
+# ╔═╡ 907729d2-6b55-4afb-a3fd-5a450dd57a63
+begin
+center1 = [npxx/2, npxy/2]
+sigmas1 = [sbx*1000/spxfovx/mag,sby*1000/spxfovy/mag]
+pp = MvNormal(center1,sigmas1)
+
+X1 = range(0, npxx, length=npxx)
+Y1 = range(0, npxy, length=npxy)
+Z1 = [pdf(pp, [x,y]) for y in Y1, x in X1] # Note x-y "for" ordering
+p01=plot(X1,Y1,Z1,st=:surface,xlabel="x (mm)",ylabel="y (mm)")
+
+p11=contourf(X1, Y1, Z1, xlabel="x (mm)",ylabel="y (mm)")
+plot(p01,p11,size=(900,300))
+end
+
+# ╔═╡ adebe61f-6355-46f3-b6d8-86fd50484366
+begin
+sigmafovx=sigmas1[1]
+sigmafovy=sigmas1[2]
+
+md""" Sigma of the spot in the FOV is $sigmafovx microns in x axis and $sigmafovy microns in y axis"""
+end
+
+# ╔═╡ 2e1ff7fa-1f63-4d52-87e2-b0d61fc1f85d
+heatmap(Z1)
 
 # ╔═╡ c2289697-ab87-4f11-81e6-bee3439ca3cb
 md"""
 # Functions
 """
 
+# ╔═╡ 8d920a11-2050-4562-b55c-0b916cabf42c
+function toimage(data,xran,yran,spxfovx,spxfovy)
+	x=data[1,:]
+	y=data[2,:]
+	fit(Histogram,(x, y), (xran[1]:spxfovx:xran[2], yran[1]:spxfovy:yran[2])).weights
+end
+
 # ╔═╡ 13b7f5db-8593-4511-b540-6f40e8eb3498
-function sample_array(poss,xran,yran,spxfovx,spxfovy)
+function poss_fov(poss,xran,yran,spxfovx,spxfovy)
 	possfov=[0,0]
-	xs=xran[1]:spxfovx:xran[2]
-	ys=yran[1]:spxfovy:yran[2]
 	for pos in eachrow(poss)
 		if (xran[1]<pos[1])&&(pos[1]<xran[2])
 			if (yran[1]<pos[2])&&(pos[1]<yran[2])
@@ -259,9 +293,6 @@ function sample_array(poss,xran,yran,spxfovx,spxfovy)
 		end
 	end
 	possfov=possfov[:,2:end]
-	x=possfov[1,:]
-	y=possfov[2,:]
-	fit(Histogram,(x, y), (xran[1]:spxfovx:xran[2], yran[1]:spxfovy:yran[2])).weights
 end
 
 # ╔═╡ 736f187e-e5c0-4458-8438-5860ad0f2f98
@@ -318,8 +349,10 @@ end
 
 # ╔═╡ da45d069-b08d-4221-9e7d-32371090e94d
 begin
-possfov=sample_array(poss, xran, yran, spxfovx,spxfovy)
-heatmap(possfov)
+possfov=poss_fov(poss, xran, yran, spxfovx,spxfovy)
+poss_array=toimage(possfov,xran,yran,spxfovx,spxfovy)
+heatmap(poss_array)
+
 end
 
 # ╔═╡ 03bf3bfb-2ec3-4ffa-9e83-37e21634a59d
@@ -399,8 +432,13 @@ pois_rand
 # ╟─50c17b83-57f5-48dc-aaa1-22e16f627022
 # ╟─245205d3-ef94-46cf-ba0a-48810c201610
 # ╟─245c0ff7-22b2-47aa-969d-5cf4eca9831e
-# ╠═da45d069-b08d-4221-9e7d-32371090e94d
+# ╟─da45d069-b08d-4221-9e7d-32371090e94d
+# ╟─a45829e4-ac16-4e5d-9ce2-6007d62f37e8
+# ╠═907729d2-6b55-4afb-a3fd-5a450dd57a63
+# ╟─adebe61f-6355-46f3-b6d8-86fd50484366
+# ╠═2e1ff7fa-1f63-4d52-87e2-b0d61fc1f85d
 # ╠═c2289697-ab87-4f11-81e6-bee3439ca3cb
+# ╠═8d920a11-2050-4562-b55c-0b916cabf42c
 # ╠═13b7f5db-8593-4511-b540-6f40e8eb3498
 # ╠═736f187e-e5c0-4458-8438-5860ad0f2f98
 # ╠═5ab2275a-a576-4c2a-ae01-23748092d51a
