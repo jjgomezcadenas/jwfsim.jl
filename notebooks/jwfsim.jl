@@ -48,7 +48,10 @@ import Unitful:
     A, N, mol, mmol, V, L, M
 
 # ╔═╡ 3007fa59-d2f0-4248-820d-744f04dc984d
-import PhysicalConstants.CODATA2018: N_A
+import PhysicalConstants.CODATA2018: N_A,h,SpeedOfLightInVacuum
+
+# ╔═╡ be18cfbb-3c4a-4e29-8903-0261ed57051e
+c_0=SpeedOfLightInVacuum
 
 # ╔═╡ 47414778-e472-4d4f-b05b-1213cc328a56
 function ingredients(path::String)
@@ -138,8 +141,8 @@ md"""
 
 # ╔═╡ 9eea388f-c453-480d-b022-2340fe880b89
 begin
-	pwr=1
-	emwl=375
+	pwr=1mW
+	emwl=375nm
 	sbx=2
 	sby=2
 	md"""
@@ -242,7 +245,7 @@ end
 md""" ### Molecule distribution in th FOV"""
 
 # ╔═╡ a45829e4-ac16-4e5d-9ce2-6007d62f37e8
-md""" ### Ilumination in th FOV"""
+md""" ### Illumination in th FOV"""
 
 # ╔═╡ 907729d2-6b55-4afb-a3fd-5a450dd57a63
 begin
@@ -269,6 +272,40 @@ end
 
 # ╔═╡ 2e1ff7fa-1f63-4d52-87e2-b0d61fc1f85d
 heatmap(Z1)
+
+# ╔═╡ c1af380d-8f25-4e3b-b5b3-5ac78f0a9913
+md""" ### Molecule response
+The number of emitted photons per second from the molecules will be $N_{emmitted}(x,y)=N_{incident}(x,y)N_{molecules}\sigma$ where $N_{incident}$ is the number of photons hitting the sample at (x,y) position per unit of time, $N_{molecules}$ the number of molecules por unit area, and $\sigma$ the interaccion cross section. If the number of incident photons is too high there could be a saturation on the emitted photons.
+"""
+
+# ╔═╡ 090f9903-8eb8-4846-909e-2cd2ffeb536e
+md""" - $N_{incident}(x,y)=\frac{P(x,y)}{e(\lambda)}=\frac{P_{total}G(x,y)}{e(\lambda)}$ where $P_{total}$ is the laser power, $e(\lambda)$ the energy per photon, and $G(x,y)$ the power distribution (in this case gaussian).
+"""
+
+# ╔═╡ f778f467-001d-4484-a20f-fd85e10558b1
+md""" - $N_{molecules}$ is an input of the notebook. 
+"""
+
+# ╔═╡ 58163cae-5a87-4de9-8747-f47dc0398389
+md""" - $\sigma$ is unknown (as far as I know), but it should be a function of the photon energy.  
+"""
+
+# ╔═╡ 8c9160ca-0048-4de6-8a39-ad00fe44f680
+begin
+md""" In this case:"""
+	
+end
+
+# ╔═╡ f07e7613-1402-4abc-8b06-dc98df2b8c98
+begin
+ei=uconvert(eV,h*c_0/emwl)
+md""" $e(\lambda)$=$ei """
+end
+
+# ╔═╡ bd7a2018-d882-4891-8f15-d90e92cb1077
+begin
+md""" $P_{total}$=$pwr"""
+end
 
 # ╔═╡ c2289697-ab87-4f11-81e6-bee3439ca3cb
 md"""
@@ -355,6 +392,12 @@ heatmap(poss_array)
 
 end
 
+# ╔═╡ 3e1f4f31-a563-4063-8ef9-653a508b9d86
+begin
+	nmu2u=nmu2/μm/μm
+	md""" $N_{molecules}$=$nmu2u """
+end
+
 # ╔═╡ 03bf3bfb-2ec3-4ffa-9e83-37e21634a59d
 function tonpers(r::Float64, s::Float64, unit)
 	toncm2(r::Float64, s::Float64) / (uconvert(cm^-2, unit)/cm^-2)
@@ -397,11 +440,15 @@ nmcm3(1e-12, 1.0) ≈ tonpers(12.0, 1.0, 1.0μm^-2)
 # ╔═╡ 9541c8a6-318a-4266-b388-4b69ce7eb5b1
 pois_rand
 
+# ╔═╡ 0ab9fa82-6a93-48c9-9419-eb2e15f1df99
+5nm/2W
+
 # ╔═╡ Cell order:
 # ╠═625c1998-828c-11ed-2c7b-f731be119aaf
 # ╠═4b3981d2-d1f9-4f56-a44d-bcc55d0b1d87
 # ╠═d75ba333-2445-4828-a66c-3c33d96de16f
 # ╠═3007fa59-d2f0-4248-820d-744f04dc984d
+# ╠═be18cfbb-3c4a-4e29-8903-0261ed57051e
 # ╠═47414778-e472-4d4f-b05b-1213cc328a56
 # ╠═558dbadc-cb83-4cfb-a05f-1f57b62bcf1d
 # ╠═6497410d-d1eb-4c06-9f98-1da578fb683f
@@ -409,9 +456,9 @@ pois_rand
 # ╟─27b5dc4d-b688-4414-8fcb-97c4ef1d680d
 # ╟─d8ea1458-304a-462d-abdc-24ba32d3d8b0
 # ╟─92db42ec-1f18-4277-8612-7613c7c32c40
-# ╟─d7f3fe4f-455a-435b-98f7-60c00e96c1eb
+# ╠═d7f3fe4f-455a-435b-98f7-60c00e96c1eb
 # ╟─f506db9e-3fe3-4963-856a-be91d91e8266
-# ╟─9eea388f-c453-480d-b022-2340fe880b89
+# ╠═9eea388f-c453-480d-b022-2340fe880b89
 # ╠═63e4aa43-b606-4077-9205-e49fd7ac3b21
 # ╟─03357bcc-b54d-4104-b2c5-cbc5ce31b721
 # ╟─cc82232e-fc86-413f-8b73-8044b4de6260
@@ -428,15 +475,23 @@ pois_rand
 # ╟─766d17b5-499a-4a28-8628-3031b023a851
 # ╟─a24aab57-2145-40de-bfd0-b768fef6d01d
 # ╟─f7f4ba8b-e1a6-4632-a785-767b2bfb646f
-# ╟─d9e3e919-f1b6-4b0b-9e07-04d5855f3587
-# ╟─50c17b83-57f5-48dc-aaa1-22e16f627022
+# ╠═d9e3e919-f1b6-4b0b-9e07-04d5855f3587
+# ╠═50c17b83-57f5-48dc-aaa1-22e16f627022
 # ╟─245205d3-ef94-46cf-ba0a-48810c201610
 # ╟─245c0ff7-22b2-47aa-969d-5cf4eca9831e
 # ╟─da45d069-b08d-4221-9e7d-32371090e94d
 # ╟─a45829e4-ac16-4e5d-9ce2-6007d62f37e8
-# ╠═907729d2-6b55-4afb-a3fd-5a450dd57a63
+# ╟─907729d2-6b55-4afb-a3fd-5a450dd57a63
 # ╟─adebe61f-6355-46f3-b6d8-86fd50484366
-# ╠═2e1ff7fa-1f63-4d52-87e2-b0d61fc1f85d
+# ╟─2e1ff7fa-1f63-4d52-87e2-b0d61fc1f85d
+# ╟─c1af380d-8f25-4e3b-b5b3-5ac78f0a9913
+# ╟─090f9903-8eb8-4846-909e-2cd2ffeb536e
+# ╟─f778f467-001d-4484-a20f-fd85e10558b1
+# ╟─58163cae-5a87-4de9-8747-f47dc0398389
+# ╟─8c9160ca-0048-4de6-8a39-ad00fe44f680
+# ╟─f07e7613-1402-4abc-8b06-dc98df2b8c98
+# ╟─bd7a2018-d882-4891-8f15-d90e92cb1077
+# ╟─3e1f4f31-a563-4063-8ef9-653a508b9d86
 # ╠═c2289697-ab87-4f11-81e6-bee3439ca3cb
 # ╠═8d920a11-2050-4562-b55c-0b916cabf42c
 # ╠═13b7f5db-8593-4511-b540-6f40e8eb3498
@@ -450,3 +505,4 @@ pois_rand
 # ╠═c0f7e1ad-37d2-4b42-8683-5d2088a8c4ea
 # ╠═5850de84-9c5c-4036-b941-97e604d9b4a0
 # ╠═9541c8a6-318a-4266-b388-4b69ce7eb5b1
+# ╠═0ab9fa82-6a93-48c9-9419-eb2e15f1df99
