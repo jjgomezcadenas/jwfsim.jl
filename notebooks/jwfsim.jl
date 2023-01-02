@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.19
+# v0.19.14
 
 using Markdown
 using InteractiveUtils
@@ -107,9 +107,12 @@ schema = ["Molecules per micron square", "Molarity"]
 # ╔═╡ 0782a2c9-7d5a-49bc-8ddb-71c57238de8b
 md""" Select model input : $(@bind sch Select(schema))"""
 
+# ╔═╡ 55352380-ff6d-42f6-863a-e5de8cced158
+md""" Select length (in mm) of (square) glass: $(@bind smm NumberField(0.0:0.1:10.0, default=1))"""
+
 # ╔═╡ abe2369a-8a9a-4e0e-9707-4184e6d6f339
 if sch=="Molecules per micron square"
-	md""" Select the molecules per unit area (in molecules per $\mu$m$^2$): $(@bind a NumberField(0.0:100.0, default=4.0))"""
+	md""" Select the molecules per unit area (in molecules per $\mu$m$^2$): $(@bind a NumberField(0.0:100.0, default=1.0))"""
 end
 
 # ╔═╡ 00cfc948-31e4-4d17-bf44-0a25c911cf68
@@ -117,15 +120,9 @@ if sch=="Molarity"
 	md""" Select the molarity of the solution (in -log(M)): $(@bind b NumberField(5.0:15.0, default=12))"""
 end
 
-# ╔═╡ 55352380-ff6d-42f6-863a-e5de8cced158
-md""" Select length (in mm) of (square) glass: $(@bind smm NumberField(0:10.0, default=1.00))"""
-
-# ╔═╡ 84e73dfd-a9a3-4bd4-93ce-2fc4a4e78f1b
-smu=smm*1000
-
 # ╔═╡ 39ec5a5f-8e06-4143-8016-39fc9020aaa1
 md"""
-- once we have the mean value of the number of molecules per micron square (which we assume to be the granularity of our simulation, and call nmu2), we can simulate the molecule distribution on the sample.
+Once we have the mean value of the number of molecules per micron square (which we assume to be the granularity of our simulation, and call nmu2), we can simulate the molecule distribution on the sample.
 
 """
 
@@ -166,6 +163,18 @@ end
 md""" Molecules per micron square (nmu2)=$nmu2 """
 end
 
+
+# ╔═╡ 84e73dfd-a9a3-4bd4-93ce-2fc4a4e78f1b
+begin
+smu=smm*1000
+ntot=Int(trunc(nmu2*smu^2))
+md""" Total number of generated molecules = $ntot """
+end
+
+# ╔═╡ b32cd1dd-a93a-41e6-a9cd-92bb9295f3ad
+begin
+poss=smu*rand(Float64, (ntot,2))
+end
 
 # ╔═╡ 03bf3bfb-2ec3-4ffa-9e83-37e21634a59d
 function tonpers(r::Float64, s::Float64, unit)
@@ -219,15 +228,16 @@ pois_rand
 # ╠═6497410d-d1eb-4c06-9f98-1da578fb683f
 # ╠═40bcafee-88a9-4c7b-a611-d0599e4567e9
 # ╠═27b5dc4d-b688-4414-8fcb-97c4ef1d680d
-# ╠═790af81b-45ce-4fae-ab0b-7fb52b87a2af
-# ╠═018997ec-0c72-4677-b6d1-e8dafa1c2811
-# ╠═0782a2c9-7d5a-49bc-8ddb-71c57238de8b
-# ╠═55352380-ff6d-42f6-863a-e5de8cced158
-# ╠═abe2369a-8a9a-4e0e-9707-4184e6d6f339
-# ╠═00cfc948-31e4-4d17-bf44-0a25c911cf68
-# ╠═18fc7474-c7b8-4092-9dfa-92f07ce3cb2a
-# ╠═84e73dfd-a9a3-4bd4-93ce-2fc4a4e78f1b
-# ╠═39ec5a5f-8e06-4143-8016-39fc9020aaa1
+# ╟─790af81b-45ce-4fae-ab0b-7fb52b87a2af
+# ╟─018997ec-0c72-4677-b6d1-e8dafa1c2811
+# ╟─0782a2c9-7d5a-49bc-8ddb-71c57238de8b
+# ╟─55352380-ff6d-42f6-863a-e5de8cced158
+# ╟─abe2369a-8a9a-4e0e-9707-4184e6d6f339
+# ╟─00cfc948-31e4-4d17-bf44-0a25c911cf68
+# ╟─18fc7474-c7b8-4092-9dfa-92f07ce3cb2a
+# ╟─39ec5a5f-8e06-4143-8016-39fc9020aaa1
+# ╟─84e73dfd-a9a3-4bd4-93ce-2fc4a4e78f1b
+# ╟─b32cd1dd-a93a-41e6-a9cd-92bb9295f3ad
 # ╠═766d17b5-499a-4a28-8628-3031b023a851
 # ╠═c2289697-ab87-4f11-81e6-bee3439ca3cb
 # ╠═736f187e-e5c0-4458-8438-5860ad0f2f98
