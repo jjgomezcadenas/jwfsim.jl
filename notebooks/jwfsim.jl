@@ -290,6 +290,9 @@ md""" - $N_{molecules}$ is an input of the notebook.
 md""" - $\sigma$ is unknown (as far as I know), but it should be a function of the photon energy.  
 """
 
+# ╔═╡ b3c0f88a-074f-4ca6-8642-16801816cc36
+md""" Select cross section -log$\sigma$ in (for $\sigma$ in cm$^2$): $(@bind r NumberField(0.0:10.0, default=5))"""
+
 # ╔═╡ 8c9160ca-0048-4de6-8a39-ad00fe44f680
 begin
 md""" In this case:"""
@@ -305,6 +308,12 @@ end
 # ╔═╡ bd7a2018-d882-4891-8f15-d90e92cb1077
 begin
 md""" $P_{total}$=$pwr"""
+end
+
+# ╔═╡ d32c1cc1-57b1-4d8e-a816-cf118e3353f1
+begin
+	sigma=(10^(-r))*cm^2
+	md""" $\sigma$=$sigma"""
 end
 
 # ╔═╡ c2289697-ab87-4f11-81e6-bee3439ca3cb
@@ -488,10 +497,12 @@ pois_rand
 # ╟─090f9903-8eb8-4846-909e-2cd2ffeb536e
 # ╟─f778f467-001d-4484-a20f-fd85e10558b1
 # ╟─58163cae-5a87-4de9-8747-f47dc0398389
+# ╟─b3c0f88a-074f-4ca6-8642-16801816cc36
 # ╟─8c9160ca-0048-4de6-8a39-ad00fe44f680
 # ╟─f07e7613-1402-4abc-8b06-dc98df2b8c98
 # ╟─bd7a2018-d882-4891-8f15-d90e92cb1077
 # ╟─3e1f4f31-a563-4063-8ef9-653a508b9d86
+# ╟─d32c1cc1-57b1-4d8e-a816-cf118e3353f1
 # ╠═c2289697-ab87-4f11-81e6-bee3439ca3cb
 # ╠═8d920a11-2050-4562-b55c-0b916cabf42c
 # ╠═13b7f5db-8593-4511-b540-6f40e8eb3498
