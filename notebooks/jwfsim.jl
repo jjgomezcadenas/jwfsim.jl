@@ -29,6 +29,8 @@ begin
 	using InteractiveUtils
 	using Statistics
 	using StatsBase
+	using StatsPlots
+	using Distributions
 	using Unitful 
 	using UnitfulEquivalences 
 	using PhysicalConstants
@@ -100,7 +102,7 @@ md"""
 md""" 
 ## Camera specs
 
-- In order to simulate the images we need to know the number of pixels, their sizes, binning, noise, QE...
+ In order to simulate the images we need to know the number of pixels, their sizes, binning, noise, QE...
 """
 
 
@@ -129,18 +131,52 @@ begin
 	
 end
 
+# ╔═╡ f506db9e-3fe3-4963-856a-be91d91e8266
+md""" 
+## Laser specs
+"""
+
+# ╔═╡ 9eea388f-c453-480d-b022-2340fe880b89
+begin
+	pwr=1
+	emwl=375
+	sbx=2
+	sby=2
+	md"""
+	- Power = $pwr mW
+	- Emission wavelength = 375 nm
+	- Beam width (1 sigma assuming gaussian beam) =  $sbx x $sby mm 
+	"""
+	
+end
+
+# ╔═╡ 63e4aa43-b606-4077-9205-e49fd7ac3b21
+begin
+center = [0, 0]
+sigmas = [sbx,sby]
+p = MvNormal(center,sigmas)
+
+X = range(-3*sbx, 3*sbx, length=100)
+Y = range(-3*sby, 3*sby, length=100)
+Z = [pdf(p, [x,y]) for y in Y, x in X] # Note x-y "for" ordering
+p0=plot(X,Y,Z,st=:surface,xlabel="x (mm)",ylabel="y (mm)")
+
+p1=contourf(X, Y, Z, color=:viridis,xlabel="x (mm)",ylabel="y (mm)")
+plot(p0,p1,size=(900,300))
+end
+
 # ╔═╡ 03357bcc-b54d-4104-b2c5-cbc5ce31b721
 md""" 
 ## Other specs
 
-- Magnification, power losses throug the set up...
+Magnification, power losses throug the set up...
 """
 
 # ╔═╡ cc82232e-fc86-413f-8b73-8044b4de6260
 begin
 	mag=100
 	md"""
-	-Magnification= x $mag
+	- Magnification= x $mag
 	"""
 end
 
@@ -183,7 +219,7 @@ Once we have the mean value of the number of molecules per micron square (which 
 md"""
 # Simulate image
 
-- Once we have simulated the positions of the molecules in our sample we can 
+
 
 """
 
@@ -227,6 +263,9 @@ end
 # ╔═╡ b32cd1dd-a93a-41e6-a9cd-92bb9295f3ad
 begin
 poss=smu*rand(Float64, (ntot,2))
+md"""
+Positions (x,y) in microns of the generated molecules are stored in 'poss' array
+"""
 end
 
 # ╔═╡ 03bf3bfb-2ec3-4ffa-9e83-37e21634a59d
@@ -279,11 +318,14 @@ pois_rand
 # ╠═47414778-e472-4d4f-b05b-1213cc328a56
 # ╠═558dbadc-cb83-4cfb-a05f-1f57b62bcf1d
 # ╠═6497410d-d1eb-4c06-9f98-1da578fb683f
-# ╠═40bcafee-88a9-4c7b-a611-d0599e4567e9
+# ╟─40bcafee-88a9-4c7b-a611-d0599e4567e9
 # ╟─27b5dc4d-b688-4414-8fcb-97c4ef1d680d
 # ╟─d8ea1458-304a-462d-abdc-24ba32d3d8b0
 # ╟─92db42ec-1f18-4277-8612-7613c7c32c40
 # ╟─d7f3fe4f-455a-435b-98f7-60c00e96c1eb
+# ╟─f506db9e-3fe3-4963-856a-be91d91e8266
+# ╟─9eea388f-c453-480d-b022-2340fe880b89
+# ╠═63e4aa43-b606-4077-9205-e49fd7ac3b21
 # ╟─03357bcc-b54d-4104-b2c5-cbc5ce31b721
 # ╟─cc82232e-fc86-413f-8b73-8044b4de6260
 # ╟─790af81b-45ce-4fae-ab0b-7fb52b87a2af
@@ -295,7 +337,7 @@ pois_rand
 # ╟─18fc7474-c7b8-4092-9dfa-92f07ce3cb2a
 # ╟─39ec5a5f-8e06-4143-8016-39fc9020aaa1
 # ╟─84e73dfd-a9a3-4bd4-93ce-2fc4a4e78f1b
-# ╟─b32cd1dd-a93a-41e6-a9cd-92bb9295f3ad
+# ╠═b32cd1dd-a93a-41e6-a9cd-92bb9295f3ad
 # ╠═766d17b5-499a-4a28-8628-3031b023a851
 # ╠═c2289697-ab87-4f11-81e6-bee3439ca3cb
 # ╠═736f187e-e5c0-4458-8438-5860ad0f2f98
