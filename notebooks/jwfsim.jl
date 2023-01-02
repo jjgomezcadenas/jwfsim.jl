@@ -91,6 +91,59 @@ The simulation has several distinct ingredients:
 
 """
 
+# ╔═╡ d8ea1458-304a-462d-abdc-24ba32d3d8b0
+md"""
+# Set up
+"""
+
+# ╔═╡ 92db42ec-1f18-4277-8612-7613c7c32c40
+md""" 
+## Camera specs
+
+- In order to simulate the images we need to know the number of pixels, their sizes, binning, noise, QE...
+"""
+
+
+# ╔═╡ d7f3fe4f-455a-435b-98f7-60c00e96c1eb
+begin
+	ntpxx=2048
+	ntpxy=2048
+	stpxx=2
+	stpxy=2
+	binning=16
+	ssensx=stpxx*ntpxx/1000
+	ssenst=stpxy*ntpxy/1000
+	npxx=ntpxx/sqrt(binning)
+	npxy=ntpxy/sqrt(binning)
+	spxx=stpxx*sqrt(binning)
+	spxy=stpxy*sqrt(binning)
+	md"""
+- Pixel array = $ntpxx x $ntpxy
+- Pixel size = $stpxx x $stpxy (microns)
+- Sensor size= $ssensx x $ssensx (mm)
+- Binning= $binning
+- Pixel array (with binning) = $npxx x $npxy
+- Pixel size (with binning)= $spxx x $spxy (microns)
+
+"""
+	
+end
+
+# ╔═╡ 03357bcc-b54d-4104-b2c5-cbc5ce31b721
+md""" 
+## Other specs
+
+- Magnification, power losses throug the set up...
+"""
+
+# ╔═╡ cc82232e-fc86-413f-8b73-8044b4de6260
+begin
+	mag=100
+	md"""
+	-Magnification= x $mag
+	"""
+end
+
 # ╔═╡ 790af81b-45ce-4fae-ab0b-7fb52b87a2af
 md"""
 # Simulation of the spatial distribution of the molecules:
@@ -128,9 +181,9 @@ Once we have the mean value of the number of molecules per micron square (which 
 
 # ╔═╡ 766d17b5-499a-4a28-8628-3031b023a851
 md"""
-## Simulate image
+# Simulate image
 
-- once we have the mean value of the number of molecules per micron square (which we assume to be the granularity of our simulation, and call nmu2), we need to define the field of view (FOV) in pixels (we can take 1 pixel = 1 micron)
+- Once we have simulated the positions of the molecules in our sample we can 
 
 """
 
@@ -227,7 +280,12 @@ pois_rand
 # ╠═558dbadc-cb83-4cfb-a05f-1f57b62bcf1d
 # ╠═6497410d-d1eb-4c06-9f98-1da578fb683f
 # ╠═40bcafee-88a9-4c7b-a611-d0599e4567e9
-# ╠═27b5dc4d-b688-4414-8fcb-97c4ef1d680d
+# ╟─27b5dc4d-b688-4414-8fcb-97c4ef1d680d
+# ╟─d8ea1458-304a-462d-abdc-24ba32d3d8b0
+# ╟─92db42ec-1f18-4277-8612-7613c7c32c40
+# ╟─d7f3fe4f-455a-435b-98f7-60c00e96c1eb
+# ╟─03357bcc-b54d-4104-b2c5-cbc5ce31b721
+# ╟─cc82232e-fc86-413f-8b73-8044b4de6260
 # ╟─790af81b-45ce-4fae-ab0b-7fb52b87a2af
 # ╟─018997ec-0c72-4677-b6d1-e8dafa1c2811
 # ╟─0782a2c9-7d5a-49bc-8ddb-71c57238de8b
