@@ -97,16 +97,37 @@ md"""
 
 Ingredientes:
 
-1. Molecules per micron square (mpm2). The number of molecules in each area of $\mu$m x $\mu$m.
+1. Molecules per micron square (nmu2). The number of molecules in each area of $\mu$m x $\mu$m.
 2. Target surface, e.g, the surface where the molecules are deposited (tipically 1cm2)
 """
 
-# ╔═╡ abe2369a-8a9a-4e0e-9707-4184e6d6f339
-md""" Select the molecules per unit area (in molecules per $\mu$m$^2$): $(@bind logr NumberField(0.0:100.0, default=1.0))"""
+# ╔═╡ 018997ec-0c72-4677-b6d1-e8dafa1c2811
+schema = ["Molecules per micron square", "Molarity"]
 
+# ╔═╡ 0782a2c9-7d5a-49bc-8ddb-71c57238de8b
+md""" Select model input : $(@bind sch Select(schema))"""
+
+# ╔═╡ abe2369a-8a9a-4e0e-9707-4184e6d6f339
+if sch=="Molecules per micron square"
+	md""" Select the molecules per unit area (in molecules per $\mu$m$^2$): $(@bind a NumberField(0.0:100.0, default=4.0))"""
+end
+
+# ╔═╡ 00cfc948-31e4-4d17-bf44-0a25c911cf68
+if sch=="Molarity"
+	md""" Select the molarity of the solution (in -log(M)): $(@bind b NumberField(5.0:15.0, default=12))"""
+end
 
 # ╔═╡ 55352380-ff6d-42f6-863a-e5de8cced158
-md""" Select length (in cm) of (square) glass: $(@bind scm NumberField(1:10.0, default=1.00))"""
+md""" Select length (in mm) of (square) glass: $(@bind smm NumberField(0:10.0, default=1.00))"""
+
+# ╔═╡ 84e73dfd-a9a3-4bd4-93ce-2fc4a4e78f1b
+smu=smm*1000
+
+# ╔═╡ 39ec5a5f-8e06-4143-8016-39fc9020aaa1
+md"""
+- once we have the mean value of the number of molecules per micron square (which we assume to be the granularity of our simulation, and call nmu2), we can simulate the molecule distribution on the sample.
+
+"""
 
 # ╔═╡ 766d17b5-499a-4a28-8628-3031b023a851
 md"""
@@ -114,14 +135,6 @@ md"""
 
 - once we have the mean value of the number of molecules per micron square (which we assume to be the granularity of our simulation, and call nmu2), we need to define the field of view (FOV) in pixels (we can take 1 pixel = 1 micron)
 
-"""
-
-# ╔═╡ c1b960ad-b7f5-46ff-985f-0f304bdb0a48
-md""" Select FOV size (in pixels = μm) : $(@bind fovl NumberField(10:1000, default=30))"""
-
-# ╔═╡ 4153e45e-3973-4b37-adfc-49feda60e3a2
-md"""
-Next step is to generate in each pixel of the FOV (with dimensions fovl^2), a population of molecules. This is done throwing Poisson numbers (with mu=nmu2) in each pixel. 
 """
 
 # ╔═╡ c2289697-ab87-4f11-81e6-bee3439ca3cb
@@ -142,16 +155,22 @@ function toncm2(r::Float64, s::Float64)
 	(uconvert(cm^-3,10^-r*M*N_A) /(s*cm^-1))/cm^-2 
 end
 
+# ╔═╡ 18fc7474-c7b8-4092-9dfa-92f07ce3cb2a
+begin
+if sch=="Molecules per micron square"
+	nmu2=a
+end
+if sch=="Molarity"
+	nmu2=toncm2(b,smm)/1e8
+end
+md""" Molecules per micron square (nmu2)=$nmu2 """
+end
+
+
 # ╔═╡ 03bf3bfb-2ec3-4ffa-9e83-37e21634a59d
 function tonpers(r::Float64, s::Float64, unit)
 	toncm2(r::Float64, s::Float64) / (uconvert(cm^-2, unit)/cm^-2)
 end
-
-# ╔═╡ 538477a1-748f-443c-a36b-cba2f1a7645b
-nmu2 = tonpers(logr, scm, 1.0μm^-2)
-
-# ╔═╡ 588cd3a3-9b34-4fbb-9959-0f9219ef43b7
-pois_rand(nmu2)
 
 # ╔═╡ a988f5a4-ce60-4820-abea-3e3c79854d89
 function populate_fov(fovl::Integer, nmu2::Float64)
@@ -164,17 +183,8 @@ function populate_fov(fovl::Integer, nmu2::Float64)
 	FOV
 end
 
-# ╔═╡ 4c6f43a2-5354-4dc5-99bf-0f136c648c33
-nfov = populate_fov(fovl, nmu2)
+# ╔═╡ c45c60cd-b581-4be1-bfbf-fca725221e4b
 
-# ╔═╡ 629c7167-4314-4668-9433-c4ab54dc85b8
-length(filter(x -> x == 1.0, nfov)) 
-
-# ╔═╡ fba1abc3-09c8-4f33-88a9-25e8a9748b69
-nfov[nfov .== 1.0]
-
-# ╔═╡ a9873b66-6336-406f-a9b1-0fe8a1fc0dc3
-heatmap(nfov)
 
 # ╔═╡ f893442d-230c-4ecd-b618-2ad89393963b
 md"""
@@ -196,6 +206,9 @@ end
 # ╔═╡ 5850de84-9c5c-4036-b941-97e604d9b4a0
 nmcm3(1e-12, 1.0) ≈ tonpers(12.0, 1.0, 1.0μm^-2)
 
+# ╔═╡ 9541c8a6-318a-4266-b388-4b69ce7eb5b1
+pois_rand
+
 # ╔═╡ Cell order:
 # ╠═625c1998-828c-11ed-2c7b-f731be119aaf
 # ╠═4b3981d2-d1f9-4f56-a44d-bcc55d0b1d87
@@ -207,23 +220,23 @@ nmcm3(1e-12, 1.0) ≈ tonpers(12.0, 1.0, 1.0μm^-2)
 # ╠═40bcafee-88a9-4c7b-a611-d0599e4567e9
 # ╠═27b5dc4d-b688-4414-8fcb-97c4ef1d680d
 # ╠═790af81b-45ce-4fae-ab0b-7fb52b87a2af
-# ╠═abe2369a-8a9a-4e0e-9707-4184e6d6f339
+# ╠═018997ec-0c72-4677-b6d1-e8dafa1c2811
+# ╠═0782a2c9-7d5a-49bc-8ddb-71c57238de8b
 # ╠═55352380-ff6d-42f6-863a-e5de8cced158
+# ╠═abe2369a-8a9a-4e0e-9707-4184e6d6f339
+# ╠═00cfc948-31e4-4d17-bf44-0a25c911cf68
+# ╠═18fc7474-c7b8-4092-9dfa-92f07ce3cb2a
+# ╠═84e73dfd-a9a3-4bd4-93ce-2fc4a4e78f1b
+# ╠═39ec5a5f-8e06-4143-8016-39fc9020aaa1
 # ╠═766d17b5-499a-4a28-8628-3031b023a851
-# ╠═c1b960ad-b7f5-46ff-985f-0f304bdb0a48
-# ╠═4153e45e-3973-4b37-adfc-49feda60e3a2
-# ╠═538477a1-748f-443c-a36b-cba2f1a7645b
-# ╠═588cd3a3-9b34-4fbb-9959-0f9219ef43b7
-# ╠═4c6f43a2-5354-4dc5-99bf-0f136c648c33
-# ╠═629c7167-4314-4668-9433-c4ab54dc85b8
-# ╠═fba1abc3-09c8-4f33-88a9-25e8a9748b69
-# ╠═a9873b66-6336-406f-a9b1-0fe8a1fc0dc3
 # ╠═c2289697-ab87-4f11-81e6-bee3439ca3cb
 # ╠═736f187e-e5c0-4458-8438-5860ad0f2f98
 # ╠═5ab2275a-a576-4c2a-ae01-23748092d51a
 # ╠═cc6a3d4b-b032-4092-b29a-0f7b6854852b
 # ╠═03bf3bfb-2ec3-4ffa-9e83-37e21634a59d
 # ╠═a988f5a4-ce60-4820-abea-3e3c79854d89
+# ╠═c45c60cd-b581-4be1-bfbf-fca725221e4b
 # ╠═f893442d-230c-4ecd-b618-2ad89393963b
 # ╠═c0f7e1ad-37d2-4b42-8683-5d2088a8c4ea
 # ╠═5850de84-9c5c-4036-b941-97e604d9b4a0
+# ╠═9541c8a6-318a-4266-b388-4b69ce7eb5b1
