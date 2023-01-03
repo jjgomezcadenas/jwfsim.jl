@@ -114,8 +114,8 @@ md"""
 begin
 	ntpxx=2048
 	ntpxy=2048
-	stpxx=2μm
-	stpxy=2μm
+	stpxx=6.5μm
+	stpxy=6.5μm
 	binning=16
 	ssensx=stpxx*ntpxx
 	ssensy=stpxy*ntpxy
@@ -123,6 +123,9 @@ begin
 	npxy=Int(ntpxy/sqrt(binning))
 	spxx=stpxx*sqrt(binning)
 	spxy=stpxy*sqrt(binning)
+	QE=0.8
+	readout_n=0.8
+	dc=0.06s^-1
 	md"""
 - Pixel array = $ntpxx x $ntpxy
 - Pixel size = $stpxx x $stpxy 
@@ -348,8 +351,21 @@ The maximum resolution that can be obtained with an opcical system is the diffra
 # ╔═╡ cfa76021-fdd0-4719-8c40-0b4cac126239
 dl=0.3*μm
 
-# ╔═╡ ee8a61f6-65a4-402c-a70d-9e84a1c23363
-dl/spxfovx
+# ╔═╡ 7d7fdb32-f273-42f4-ab16-a9ab3693fb97
+md"""
+### Camera response
+"""
+
+# ╔═╡ 5de5c815-f011-4dd0-9c18-6f769a7fd36a
+md"""
+The number of generated electrons will be $N_e=QE(\lambda)N_{em}T_{exp}+N_{dark}T_{exp}+N_{readout}$ where $QE$ is the quantum efficiency of the camera for the emission wavelength, $T_{exp}$ the exposition time, $N_{em}$ the emitted photons by the sample per second (shown above), $N_{dark}$ the dark current of the camera, and $N_{readout}$ the number of electrons generated in the readout process in each pixel.
+"""
+
+# ╔═╡ b95fed67-5021-4070-abef-d5150c6a82aa
+md""" Set exposure time in seconds: $(@bind texp0 NumberField(0.0:20.0, default=5))"""
+
+# ╔═╡ 8e6aac57-72cf-40d7-90de-12f5717e3420
+texp=texp0*s
 
 # ╔═╡ c2289697-ab87-4f11-81e6-bee3439ca3cb
 md"""
@@ -462,6 +478,12 @@ begin
 	heatmap(N_em_dl)
 end
 
+# ╔═╡ 631fd633-0519-42b0-89a7-eae72bba519a
+begin
+	N_e=QE*N_em_dl*texp.+dc*texp.+readout_n
+	heatmap(N_e)
+end
+
 # ╔═╡ 03bf3bfb-2ec3-4ffa-9e83-37e21634a59d
 function tonpers(r::Float64, s::Float64, unit)
 	toncm2(r::Float64, s::Float64) / (uconvert(cm^-2, unit)/cm^-2)
@@ -525,7 +547,7 @@ pois_rand
 # ╠═9eea388f-c453-480d-b022-2340fe880b89
 # ╠═63e4aa43-b606-4077-9205-e49fd7ac3b21
 # ╟─03357bcc-b54d-4104-b2c5-cbc5ce31b721
-# ╟─cc82232e-fc86-413f-8b73-8044b4de6260
+# ╠═cc82232e-fc86-413f-8b73-8044b4de6260
 # ╟─790af81b-45ce-4fae-ab0b-7fb52b87a2af
 # ╟─018997ec-0c72-4677-b6d1-e8dafa1c2811
 # ╟─0782a2c9-7d5a-49bc-8ddb-71c57238de8b
@@ -568,7 +590,11 @@ pois_rand
 # ╟─04e8c605-f597-46af-88ed-c3c154bee3e2
 # ╠═cfa76021-fdd0-4719-8c40-0b4cac126239
 # ╠═76820384-74f6-46d9-9b70-83d93f1856ed
-# ╠═ee8a61f6-65a4-402c-a70d-9e84a1c23363
+# ╠═7d7fdb32-f273-42f4-ab16-a9ab3693fb97
+# ╟─5de5c815-f011-4dd0-9c18-6f769a7fd36a
+# ╠═b95fed67-5021-4070-abef-d5150c6a82aa
+# ╠═8e6aac57-72cf-40d7-90de-12f5717e3420
+# ╠═631fd633-0519-42b0-89a7-eae72bba519a
 # ╠═c2289697-ab87-4f11-81e6-bee3439ca3cb
 # ╠═8d920a11-2050-4562-b55c-0b916cabf42c
 # ╠═13b7f5db-8593-4511-b540-6f40e8eb3498
