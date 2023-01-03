@@ -113,8 +113,8 @@ md"""
 begin
 	ntpxx=2048
 	ntpxy=2048
-	stpxx=2
-	stpxy=2
+	stpxx=2μm
+	stpxy=2μm
 	binning=16
 	ssensx=stpxx*ntpxx
 	ssensy=stpxy*ntpxy
@@ -124,11 +124,11 @@ begin
 	spxy=stpxy*sqrt(binning)
 	md"""
 - Pixel array = $ntpxx x $ntpxy
-- Pixel size = $stpxx x $stpxy (microns)
-- Sensor size= $ssensx x $ssensy (microns)
+- Pixel size = $stpxx x $stpxy 
+- Sensor size= $ssensx x $ssensy 
 - Binning= $binning
 - Pixel array (with binning) = $npxx x $npxy
-- Pixel size (with binning)= $spxx x $spxy (microns)
+- Pixel size (with binning)= $spxx x $spxy 
 
 """
 	
@@ -143,8 +143,8 @@ md"""
 begin
 	pwr=1mW
 	emwl=375nm
-	sbx=2
-	sby=2
+	sbx=2.0mm
+	sby=2.0mm
 	md"""
 	- Power = $pwr mW
 	- Emission wavelength = 375 nm
@@ -157,11 +157,11 @@ end
 begin
 center = [0, 0]
 sigmas = [sbx,sby]
-p = MvNormal(center,sigmas)
+p = MvNormal(center,sigmas/mm)
 
-X = range(-3*sbx, 3*sbx, length=100)
-Y = range(-3*sby, 3*sby, length=100)
-Z = [pdf(p, [x,y]) for y in Y, x in X] # Note x-y "for" ordering
+X = range(-3*sigmas[1], 3*sigmas[1], length=100)
+Y = range(-3*sigmas[1], 3*sigmas[1], length=100)
+Z = [pdf(p, [x,y]) for y in Y/mm, x in X/mm] # Note x-y "for" ordering
 p0=plot(X,Y,Z,st=:surface,xlabel="x (mm)",ylabel="y (mm)")
 
 p1=contourf(X, Y, Z, xlabel="x (mm)",ylabel="y (mm)")
@@ -200,11 +200,14 @@ schema = ["Molecules per micron square", "Molarity"]
 md""" Select model input : $(@bind sch Select(schema))"""
 
 # ╔═╡ 55352380-ff6d-42f6-863a-e5de8cced158
-md""" Select length (in mm) of (square) glass: $(@bind smm NumberField(0.0:0.1:10.0, default=1))"""
+md""" Select length (in mm) of (square) glass: $(@bind smm_0 NumberField(0.0:0.1:10.0, default=1))"""
+
+# ╔═╡ 003fab4d-5181-4b93-a889-7594598e3ccf
+smm=smm_0*mm
 
 # ╔═╡ abe2369a-8a9a-4e0e-9707-4184e6d6f339
 if sch=="Molecules per micron square"
-	md""" Select the molecules per unit area (in molecules per $\mu$m$^2$): $(@bind a NumberField(0.0:100.0, default=1.0))"""
+	md""" Select the molecules per unit area (in molecules per $\mu$m$^2$): $(@bind a_0 NumberField(0.0:100.0, default=1.0))"""
 end
 
 # ╔═╡ 00cfc948-31e4-4d17-bf44-0a25c911cf68
@@ -236,8 +239,8 @@ begin
 	spxfovx=spxx/mag
 	spxfovy=spxy/mag
 	md"""
-	- Size of the FOV = $sfovx x $sfovy (microns)
-	- Resolution = $spxfovx x $spxfovy (microns)
+	- Size of the FOV = $sfovx x $sfovy 
+	- Resolution = $spxfovx x $spxfovy 
 	"""
 end
 
@@ -245,20 +248,20 @@ end
 md""" ### Molecule distribution in th FOV"""
 
 # ╔═╡ a45829e4-ac16-4e5d-9ce2-6007d62f37e8
-md""" ### Illumination in th FOV"""
+md""" ### Illumination in the FOV"""
 
 # ╔═╡ 907729d2-6b55-4afb-a3fd-5a450dd57a63
 begin
 center1 = [npxx/2, npxy/2]
-sigmas1 = [sbx*1000/spxfovx/mag,sby*1000/spxfovy/mag]
+sigmas1 = [uconvert(NoUnits,sbx/spxfovx)/mag,uconvert(NoUnits,sby/spxfovy)/mag]
 pp = MvNormal(center1,sigmas1)
 
 X1 = range(0, npxx, length=npxx)
 Y1 = range(0, npxy, length=npxy)
-Z1 = [pdf(pp, [x,y]) for y in Y1, x in X1] # Note x-y "for" ordering
-p01=plot(X1,Y1,Z1,st=:surface,xlabel="x (mm)",ylabel="y (mm)")
+G = [pdf(pp, [x,y]) for y in Y1, x in X1] # Note x-y "for" ordering
+p01=plot(X1,Y1,G,st=:surface,xlabel="x (mm)",ylabel="y (mm)")
 
-p11=contourf(X1, Y1, Z1, xlabel="x (mm)",ylabel="y (mm)")
+p11=contourf(X1, Y1, G, xlabel="x (mm)",ylabel="y (mm)")
 plot(p01,p11,size=(900,300))
 end
 
@@ -271,11 +274,11 @@ md""" Sigma of the spot in the FOV is $sigmafovx microns in x axis and $sigmafov
 end
 
 # ╔═╡ 2e1ff7fa-1f63-4d52-87e2-b0d61fc1f85d
-heatmap(Z1)
+heatmap(G)
 
 # ╔═╡ c1af380d-8f25-4e3b-b5b3-5ac78f0a9913
 md""" ### Molecule response
-The number of emitted photons per second from the molecules will be $N_{emmitted}(x,y)=N_{incident}(x,y)N_{molecules}\sigma$ where $N_{incident}$ is the number of photons hitting the sample at (x,y) position per unit of time, $N_{molecules}$ the number of molecules por unit area, and $\sigma$ the interaccion cross section. If the number of incident photons is too high there could be a saturation on the emitted photons.
+The number of emitted photons per second from the molecules will be $N_{emmitted}(x,y)=N_{incident}(x,y)N_{molecules}(x,y)\sigma$ where $N_{incident}$ is the number of photons hitting the sample at (x,y) position per unit of time, $N_{molecules}$ the number of molecules por unit area, and $\sigma$ the interaccion cross section. If the number of incident photons is too high there could be a saturation on the emitted photons.
 """
 
 # ╔═╡ 090f9903-8eb8-4846-909e-2cd2ffeb536e
@@ -283,7 +286,7 @@ md""" - $N_{incident}(x,y)=\frac{P(x,y)}{e(\lambda)}=\frac{P_{total}G(x,y)}{e(\l
 """
 
 # ╔═╡ f778f467-001d-4484-a20f-fd85e10558b1
-md""" - $N_{molecules}$ is an input of the notebook. 
+md""" - $N_{molecules}(x,y)$ is the local molecule density. It's value will be computed in each pixel. Dividing the number of molecules in each pixel by its area.
 """
 
 # ╔═╡ 58163cae-5a87-4de9-8747-f47dc0398389
@@ -291,7 +294,7 @@ md""" - $\sigma$ is unknown (as far as I know), but it should be a function of t
 """
 
 # ╔═╡ b3c0f88a-074f-4ca6-8642-16801816cc36
-md""" Select cross section -log$\sigma$ in (for $\sigma$ in cm$^2$): $(@bind r NumberField(0.0:10.0, default=5))"""
+md""" Select cross section -log$\sigma$ in (for $\sigma$ in cm$^2$): $(@bind r NumberField(10.0:20.0, default=10))"""
 
 # ╔═╡ 8c9160ca-0048-4de6-8a39-ad00fe44f680
 begin
@@ -316,20 +319,40 @@ begin
 	md""" $\sigma$=$sigma"""
 end
 
+# ╔═╡ 1cc91044-ff75-4cae-9513-fa99b19a4697
+md"""
+#### Incident photons
+"""
+
+# ╔═╡ cb384e7d-c506-4206-82f6-a34ac837fe66
+begin
+N_inc=uconvert.(s^-1,G*pwr/ei)
+heatmap(N_inc,colorbar_exponentformat="power")
+end
+
+# ╔═╡ c063e645-f73d-41d0-9faa-253972d73f1c
+md"""
+#### Emitted photons"""
+
 # ╔═╡ c2289697-ab87-4f11-81e6-bee3439ca3cb
 md"""
 # Functions
 """
 
 # ╔═╡ 8d920a11-2050-4562-b55c-0b916cabf42c
-function toimage(data,xran,yran,spxfovx,spxfovy)
-	x=data[1,:]
-	y=data[2,:]
+function toimage(data,xran0,yran0,spxfovx0,spxfovy0)
+	u=unit(data[1,1])
+	xran,yran,spxfovx,spxfovy=xran0/u,yran0/u,spxfovx0/u,spxfovy0/u
+	x=data[1,:]/unit(data[1,1])
+	y=data[2,:]/unit(data[1,1])
 	fit(Histogram,(x, y), (xran[1]:spxfovx:xran[2], yran[1]:spxfovy:yran[2])).weights
 end
 
 # ╔═╡ 13b7f5db-8593-4511-b540-6f40e8eb3498
-function poss_fov(poss,xran,yran,spxfovx,spxfovy)
+function poss_fov(poss0,xran0,yran0)
+	poss=poss0/unit(poss0[1,1])
+	xran=xran0/unit(xran0[1])
+	yran=yran0/unit(yran0[1])
 	possfov=[0,0]
 	for pos in eachrow(poss)
 		if (xran[1]<pos[1])&&(pos[1]<xran[2])
@@ -338,7 +361,7 @@ function poss_fov(poss,xran,yran,spxfovx,spxfovy)
 			end
 		end
 	end
-	possfov=possfov[:,2:end]
+	possfov=possfov[:,2:end]*unit(poss0[1,1])
 end
 
 # ╔═╡ 736f187e-e5c0-4458-8438-5860ad0f2f98
@@ -357,10 +380,10 @@ end
 # ╔═╡ 18fc7474-c7b8-4092-9dfa-92f07ce3cb2a
 begin
 if sch=="Molecules per micron square"
-	nmu2=a
+	nmu2=a=a_0/μm/μm
 end
 if sch=="Molarity"
-	nmu2=toncm2(b,smm)/1e8
+	nmu2=toncm2(b,smm/mm)/1e8/μm/μm
 end
 md""" Molecules per micron square (nmu2)=$nmu2 """
 end
@@ -368,7 +391,7 @@ end
 
 # ╔═╡ 84e73dfd-a9a3-4bd4-93ce-2fc4a4e78f1b
 begin
-smu=smm*1000
+smu=uconvert(μm,smm)
 ntot=Int(trunc(nmu2*smu^2))
 md""" Total number of generated molecules = $ntot """
 end
@@ -382,30 +405,41 @@ Positions (x,y) in microns of the generated molecules are stored in 'poss' array
 end
 
 # ╔═╡ d9e3e919-f1b6-4b0b-9e07-04d5855f3587
-md""" Select x0 position on the sample (in microns). It ranges from 0 to $smu : $(@bind x0 NumberField(0:smu, default=smu/2))"""
+md""" Select x0 position on the sample (in microns). It ranges from 0 to $smu : $(@bind x0_0 NumberField(0:smu/μm, default=smu/2/μm))"""
+
+# ╔═╡ 3388900d-6fa1-4c0b-86b0-9ca541ad39ed
+x0=x0_0*μm
 
 # ╔═╡ 50c17b83-57f5-48dc-aaa1-22e16f627022
-md""" Select y0 position on the sample (in microns). It ranges from 0 to $smu : $(@bind y0 NumberField(0:smu, default=smu/2))"""
+md""" Select y0 position on the sample (in microns). It ranges from 0 to $smu : $(@bind y0_0 NumberField(0:smu/μm, default=smu/2/μm))"""
+
+# ╔═╡ c4248750-7259-49ea-9aae-11ed7e3bf089
+y0=y0_0*μm
 
 # ╔═╡ 245205d3-ef94-46cf-ba0a-48810c201610
 begin
 xran=[x0-sfovx/2,x0+sfovx/2]
 yran=[y0-sfovy/2,y0+sfovy/2]
+poss
 end
 
 # ╔═╡ da45d069-b08d-4221-9e7d-32371090e94d
 begin
-possfov=poss_fov(poss, xran, yran, spxfovx,spxfovy)
+possfov=poss_fov(poss, xran, yran)
 poss_array=toimage(possfov,xran,yran,spxfovx,spxfovy)
 heatmap(poss_array)
-
 end
 
-# ╔═╡ 3e1f4f31-a563-4063-8ef9-653a508b9d86
+# ╔═╡ 1d5d2334-7973-48c3-a9c4-e0617379ec2f
 begin
-	nmu2u=nmu2/μm/μm
-	md""" $N_{molecules}$=$nmu2u """
+	pxarea=uconvert(m^2,spxfovx*spxfovy)
+	N_mol=poss_array/pxarea
+	N_em=uconvert.(s^-1,N_inc.*N_mol*sigma)
+	heatmap(N_em)
 end
+
+# ╔═╡ f87c00e1-56e1-45fb-98fd-85911ab0dd7b
+unit(xran[1])
 
 # ╔═╡ 03bf3bfb-2ec3-4ffa-9e83-37e21634a59d
 function tonpers(r::Float64, s::Float64, unit)
@@ -475,35 +509,42 @@ pois_rand
 # ╟─018997ec-0c72-4677-b6d1-e8dafa1c2811
 # ╟─0782a2c9-7d5a-49bc-8ddb-71c57238de8b
 # ╟─55352380-ff6d-42f6-863a-e5de8cced158
-# ╟─abe2369a-8a9a-4e0e-9707-4184e6d6f339
-# ╟─00cfc948-31e4-4d17-bf44-0a25c911cf68
-# ╟─18fc7474-c7b8-4092-9dfa-92f07ce3cb2a
+# ╟─003fab4d-5181-4b93-a889-7594598e3ccf
+# ╠═abe2369a-8a9a-4e0e-9707-4184e6d6f339
+# ╠═00cfc948-31e4-4d17-bf44-0a25c911cf68
+# ╠═18fc7474-c7b8-4092-9dfa-92f07ce3cb2a
 # ╟─39ec5a5f-8e06-4143-8016-39fc9020aaa1
-# ╟─84e73dfd-a9a3-4bd4-93ce-2fc4a4e78f1b
+# ╠═84e73dfd-a9a3-4bd4-93ce-2fc4a4e78f1b
 # ╠═b32cd1dd-a93a-41e6-a9cd-92bb9295f3ad
 # ╟─766d17b5-499a-4a28-8628-3031b023a851
 # ╟─a24aab57-2145-40de-bfd0-b768fef6d01d
-# ╟─f7f4ba8b-e1a6-4632-a785-767b2bfb646f
+# ╠═f7f4ba8b-e1a6-4632-a785-767b2bfb646f
 # ╠═d9e3e919-f1b6-4b0b-9e07-04d5855f3587
+# ╟─3388900d-6fa1-4c0b-86b0-9ca541ad39ed
 # ╠═50c17b83-57f5-48dc-aaa1-22e16f627022
-# ╟─245205d3-ef94-46cf-ba0a-48810c201610
+# ╠═c4248750-7259-49ea-9aae-11ed7e3bf089
+# ╠═245205d3-ef94-46cf-ba0a-48810c201610
 # ╟─245c0ff7-22b2-47aa-969d-5cf4eca9831e
-# ╟─da45d069-b08d-4221-9e7d-32371090e94d
-# ╟─a45829e4-ac16-4e5d-9ce2-6007d62f37e8
-# ╟─907729d2-6b55-4afb-a3fd-5a450dd57a63
+# ╠═da45d069-b08d-4221-9e7d-32371090e94d
+# ╠═a45829e4-ac16-4e5d-9ce2-6007d62f37e8
+# ╠═907729d2-6b55-4afb-a3fd-5a450dd57a63
 # ╟─adebe61f-6355-46f3-b6d8-86fd50484366
 # ╟─2e1ff7fa-1f63-4d52-87e2-b0d61fc1f85d
 # ╟─c1af380d-8f25-4e3b-b5b3-5ac78f0a9913
 # ╟─090f9903-8eb8-4846-909e-2cd2ffeb536e
 # ╟─f778f467-001d-4484-a20f-fd85e10558b1
 # ╟─58163cae-5a87-4de9-8747-f47dc0398389
-# ╟─b3c0f88a-074f-4ca6-8642-16801816cc36
+# ╠═b3c0f88a-074f-4ca6-8642-16801816cc36
 # ╟─8c9160ca-0048-4de6-8a39-ad00fe44f680
-# ╟─f07e7613-1402-4abc-8b06-dc98df2b8c98
-# ╟─bd7a2018-d882-4891-8f15-d90e92cb1077
-# ╟─3e1f4f31-a563-4063-8ef9-653a508b9d86
-# ╟─d32c1cc1-57b1-4d8e-a816-cf118e3353f1
+# ╠═f07e7613-1402-4abc-8b06-dc98df2b8c98
+# ╠═bd7a2018-d882-4891-8f15-d90e92cb1077
+# ╠═d32c1cc1-57b1-4d8e-a816-cf118e3353f1
+# ╟─1cc91044-ff75-4cae-9513-fa99b19a4697
+# ╠═cb384e7d-c506-4206-82f6-a34ac837fe66
+# ╠═c063e645-f73d-41d0-9faa-253972d73f1c
+# ╠═1d5d2334-7973-48c3-a9c4-e0617379ec2f
 # ╠═c2289697-ab87-4f11-81e6-bee3439ca3cb
+# ╠═f87c00e1-56e1-45fb-98fd-85911ab0dd7b
 # ╠═8d920a11-2050-4562-b55c-0b916cabf42c
 # ╠═13b7f5db-8593-4511-b540-6f40e8eb3498
 # ╠═736f187e-e5c0-4458-8438-5860ad0f2f98
