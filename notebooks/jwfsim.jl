@@ -249,10 +249,10 @@ begin
 end
 
 # ╔═╡ 245c0ff7-22b2-47aa-969d-5cf4eca9831e
-md""" ### Molecule distribution in th FOV"""
+md""" ## Molecule distribution in th FOV"""
 
 # ╔═╡ a45829e4-ac16-4e5d-9ce2-6007d62f37e8
-md""" ### Illumination in the FOV"""
+md""" ## Illumination in the FOV"""
 
 # ╔═╡ 907729d2-6b55-4afb-a3fd-5a450dd57a63
 begin
@@ -281,7 +281,7 @@ end
 heatmap(G)
 
 # ╔═╡ c1af380d-8f25-4e3b-b5b3-5ac78f0a9913
-md""" ### Molecule response
+md""" ## Molecule response
 The number of emitted photons per second from the molecules will be $N_{emmitted}(x,y)=N_{incident}(x,y)N_{molecules}(x,y)\sigma$ where $N_{incident}$ is the number of photons hitting the sample at (x,y) position per unit of time, $N_{molecules}$ the number of molecules por unit area, and $\sigma$ the interaccion cross section. If the number of incident photons is too high there could be a saturation on the emitted photons.
 """
 
@@ -325,7 +325,7 @@ end
 
 # ╔═╡ 1cc91044-ff75-4cae-9513-fa99b19a4697
 md"""
-#### Incident photons
+### Incident photons
 """
 
 # ╔═╡ cb384e7d-c506-4206-82f6-a34ac837fe66
@@ -336,11 +336,11 @@ end
 
 # ╔═╡ c063e645-f73d-41d0-9faa-253972d73f1c
 md"""
-#### Emitted photons"""
+### Emitted photons"""
 
 # ╔═╡ 40645b82-f470-4cab-bb63-d775e289d8b0
 md"""
-### Diffraction limit
+## Diffraction limit
 """
 
 # ╔═╡ 04e8c605-f597-46af-88ed-c3c154bee3e2
@@ -353,7 +353,7 @@ dl=0.3*μm
 
 # ╔═╡ 7d7fdb32-f273-42f4-ab16-a9ab3693fb97
 md"""
-### Camera response
+## Camera response
 """
 
 # ╔═╡ 5de5c815-f011-4dd0-9c18-6f769a7fd36a
@@ -367,10 +367,50 @@ md""" Set exposure time in seconds: $(@bind texp0 NumberField(0.0:20.0, default=
 # ╔═╡ 8e6aac57-72cf-40d7-90de-12f5717e3420
 texp=texp0*s
 
+# ╔═╡ 3d7cd04d-89b8-4c58-9507-2b2477155504
+md"""
+# Simulate temporal evolution
+"""
+
+# ╔═╡ 7ae42d0e-190e-40bf-872e-29524b5a0dca
+md""" To simulate the temporal evolution of the images we will simulate the temporal evolution of the molecules and the obtain the camera response of the corresponding molecule distribution. """
+
+# ╔═╡ 445860e3-7dcf-4f0a-bd87-049e181a7c0d
+md""" We will asume that each molecule has $\tau$ life-time for photobleaching. This means that after $t$, the molecule will have $P(t)=e^{-t/\tau}$ probability to be 'alive'."""
+
+# ╔═╡ 9f89d2bf-74c3-4a1d-ab7f-64bfde1f4dc5
+md""" Defining a frame rate of $1/\Delta t$ we can simulate the molecule evolution using Montecarlo methods."""
+
+# ╔═╡ 656f048c-d0bb-4eb1-b2ea-b35ec1839da6
+md""" Set life time $\tau$ in seconds: $(@bind tau0 NumberField(10:300.0, default=10))"""
+
+# ╔═╡ 49ae9e64-7858-4bab-b89a-e6fb9028e168
+tau=tau0*s
+
+# ╔═╡ d5f267b2-6c6a-438c-97dd-75a05080cf87
+md""" Set $\Delta t$ in miliseconds: $(@bind dt0 NumberField(1:1000.0, default=500))"""
+
+# ╔═╡ 6c97d42b-f0e1-4e8d-a9cd-af6d79c8db72
+dt=dt0*ms
+
+# ╔═╡ a4528adf-f185-4bce-b695-12b0e1cecfab
+prob=exp(-uconvert(NoUnits,dt/tau))
+
 # ╔═╡ c2289697-ab87-4f11-81e6-bee3439ca3cb
 md"""
 # Functions
 """
+
+# ╔═╡ ed8d60e5-fe91-4048-945f-692b791bbdae
+function frame(poss_array,spxfovx,spxfovy,G,pwr,ei,sigma,dl,texp,dc,readout_n)
+	N_inc=uconvert.(s^-1,G*pwr/ei)
+	pxarea=uconvert(m^2,spxfovx*spxfovy)
+	N_mol=poss_array/pxarea
+	N_em=uconvert.(s^-1,N_inc.*N_mol*sigma)
+	sigma_dl=[dl/spxfovx,dl/spxfovy]
+	N_em_dl = imfilter(N_em,Kernel.gaussian((sigma_dl[1],sigma_dl[2])))
+	N_e=QE*N_em_dl*texp.+dc*texp.+readout_n
+end
 
 # ╔═╡ 8d920a11-2050-4562-b55c-0b916cabf42c
 function toimage(data,xran0,yran0,spxfovx0,spxfovy0)
@@ -484,6 +524,33 @@ begin
 	heatmap(N_e)
 end
 
+# ╔═╡ 1e44b00e-70f5-4c46-a99e-939dbf5bf7f6
+function evol(poss_array0,prob)
+	poss_array1=zeros(size(poss_array))
+	for i in range(1,size(poss_array)[1])
+		for j in range(1,size(poss_array)[2])
+			n=poss_array[i,j]
+			if n!=0
+				count=0
+				for m in range(1,n)
+					r=rand()
+					count+=1*(r<prob)
+				end
+				poss_array1[i,j]=count
+			end
+		end
+	end
+	poss_array1
+end
+
+# ╔═╡ 8107ac55-4ace-47a1-a4a2-24962c918e7d
+
+begin
+ev=evol(poss_array,prob)
+img=frame(ev,spxfovx,spxfovy,G,pwr,ei,sigma,dl,texp,dc,readout_n)
+heatmap(img)
+end
+
 # ╔═╡ 03bf3bfb-2ec3-4ffa-9e83-37e21634a59d
 function tonpers(r::Float64, s::Float64, unit)
 	toncm2(r::Float64, s::Float64) / (uconvert(cm^-2, unit)/cm^-2)
@@ -567,13 +634,13 @@ pois_rand
 # ╠═50c17b83-57f5-48dc-aaa1-22e16f627022
 # ╠═c4248750-7259-49ea-9aae-11ed7e3bf089
 # ╠═245205d3-ef94-46cf-ba0a-48810c201610
-# ╟─245c0ff7-22b2-47aa-969d-5cf4eca9831e
+# ╠═245c0ff7-22b2-47aa-969d-5cf4eca9831e
 # ╠═da45d069-b08d-4221-9e7d-32371090e94d
 # ╠═a45829e4-ac16-4e5d-9ce2-6007d62f37e8
 # ╠═907729d2-6b55-4afb-a3fd-5a450dd57a63
 # ╟─adebe61f-6355-46f3-b6d8-86fd50484366
 # ╟─2e1ff7fa-1f63-4d52-87e2-b0d61fc1f85d
-# ╟─c1af380d-8f25-4e3b-b5b3-5ac78f0a9913
+# ╠═c1af380d-8f25-4e3b-b5b3-5ac78f0a9913
 # ╟─090f9903-8eb8-4846-909e-2cd2ffeb536e
 # ╟─f778f467-001d-4484-a20f-fd85e10558b1
 # ╟─58163cae-5a87-4de9-8747-f47dc0398389
@@ -582,11 +649,11 @@ pois_rand
 # ╠═f07e7613-1402-4abc-8b06-dc98df2b8c98
 # ╠═bd7a2018-d882-4891-8f15-d90e92cb1077
 # ╠═d32c1cc1-57b1-4d8e-a816-cf118e3353f1
-# ╟─1cc91044-ff75-4cae-9513-fa99b19a4697
+# ╠═1cc91044-ff75-4cae-9513-fa99b19a4697
 # ╠═cb384e7d-c506-4206-82f6-a34ac837fe66
 # ╠═c063e645-f73d-41d0-9faa-253972d73f1c
 # ╠═1d5d2334-7973-48c3-a9c4-e0617379ec2f
-# ╟─40645b82-f470-4cab-bb63-d775e289d8b0
+# ╠═40645b82-f470-4cab-bb63-d775e289d8b0
 # ╟─04e8c605-f597-46af-88ed-c3c154bee3e2
 # ╠═cfa76021-fdd0-4719-8c40-0b4cac126239
 # ╠═76820384-74f6-46d9-9b70-83d93f1856ed
@@ -595,7 +662,19 @@ pois_rand
 # ╠═b95fed67-5021-4070-abef-d5150c6a82aa
 # ╠═8e6aac57-72cf-40d7-90de-12f5717e3420
 # ╠═631fd633-0519-42b0-89a7-eae72bba519a
+# ╠═3d7cd04d-89b8-4c58-9507-2b2477155504
+# ╟─7ae42d0e-190e-40bf-872e-29524b5a0dca
+# ╟─445860e3-7dcf-4f0a-bd87-049e181a7c0d
+# ╟─9f89d2bf-74c3-4a1d-ab7f-64bfde1f4dc5
+# ╠═656f048c-d0bb-4eb1-b2ea-b35ec1839da6
+# ╠═49ae9e64-7858-4bab-b89a-e6fb9028e168
+# ╠═d5f267b2-6c6a-438c-97dd-75a05080cf87
+# ╠═6c97d42b-f0e1-4e8d-a9cd-af6d79c8db72
+# ╠═a4528adf-f185-4bce-b695-12b0e1cecfab
+# ╠═8107ac55-4ace-47a1-a4a2-24962c918e7d
 # ╠═c2289697-ab87-4f11-81e6-bee3439ca3cb
+# ╠═1e44b00e-70f5-4c46-a99e-939dbf5bf7f6
+# ╠═ed8d60e5-fe91-4048-945f-692b791bbdae
 # ╠═8d920a11-2050-4562-b55c-0b916cabf42c
 # ╠═13b7f5db-8593-4511-b540-6f40e8eb3498
 # ╠═736f187e-e5c0-4458-8438-5860ad0f2f98
