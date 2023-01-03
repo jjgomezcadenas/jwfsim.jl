@@ -35,6 +35,7 @@ begin
 	using UnitfulEquivalences 
 	using PhysicalConstants
 	using PoissonRandom
+	using ImageFiltering
 end
 
 # ╔═╡ d75ba333-2445-4828-a66c-3c33d96de16f
@@ -294,7 +295,7 @@ md""" - $\sigma$ is unknown (as far as I know), but it should be a function of t
 """
 
 # ╔═╡ b3c0f88a-074f-4ca6-8642-16801816cc36
-md""" Select cross section -log$\sigma$ in (for $\sigma$ in cm$^2$): $(@bind r NumberField(10.0:20.0, default=10))"""
+md""" Select cross section -log$\sigma$ in (for $\sigma$ in cm$^2$): $(@bind r NumberField(10.0:20.0, default=16))"""
 
 # ╔═╡ 8c9160ca-0048-4de6-8a39-ad00fe44f680
 begin
@@ -333,6 +334,22 @@ end
 # ╔═╡ c063e645-f73d-41d0-9faa-253972d73f1c
 md"""
 #### Emitted photons"""
+
+# ╔═╡ 40645b82-f470-4cab-bb63-d775e289d8b0
+md"""
+### Diffraction limit
+"""
+
+# ╔═╡ 04e8c605-f597-46af-88ed-c3c154bee3e2
+md"""
+The maximum resolution that can be obtained with an opcical system is the diffraction limited resolution. In order to simulate that limit a gaussian filter has been aplied to the images. The sigma of that kernel must be similar to the diffraction limit. 
+"""
+
+# ╔═╡ cfa76021-fdd0-4719-8c40-0b4cac126239
+dl=0.3*μm
+
+# ╔═╡ ee8a61f6-65a4-402c-a70d-9e84a1c23363
+dl/spxfovx
 
 # ╔═╡ c2289697-ab87-4f11-81e6-bee3439ca3cb
 md"""
@@ -438,8 +455,12 @@ begin
 	heatmap(N_em)
 end
 
-# ╔═╡ f87c00e1-56e1-45fb-98fd-85911ab0dd7b
-unit(xran[1])
+# ╔═╡ 76820384-74f6-46d9-9b70-83d93f1856ed
+begin
+	sigma_dl=[dl/spxfovx,dl/spxfovy]
+	N_em_dl = imfilter(N_em,Kernel.gaussian((sigma_dl[1],sigma_dl[2])))
+	heatmap(N_em_dl)
+end
 
 # ╔═╡ 03bf3bfb-2ec3-4ffa-9e83-37e21634a59d
 function tonpers(r::Float64, s::Float64, unit)
@@ -543,8 +564,12 @@ pois_rand
 # ╠═cb384e7d-c506-4206-82f6-a34ac837fe66
 # ╠═c063e645-f73d-41d0-9faa-253972d73f1c
 # ╠═1d5d2334-7973-48c3-a9c4-e0617379ec2f
+# ╟─40645b82-f470-4cab-bb63-d775e289d8b0
+# ╟─04e8c605-f597-46af-88ed-c3c154bee3e2
+# ╠═cfa76021-fdd0-4719-8c40-0b4cac126239
+# ╠═76820384-74f6-46d9-9b70-83d93f1856ed
+# ╠═ee8a61f6-65a4-402c-a70d-9e84a1c23363
 # ╠═c2289697-ab87-4f11-81e6-bee3439ca3cb
-# ╠═f87c00e1-56e1-45fb-98fd-85911ab0dd7b
 # ╠═8d920a11-2050-4562-b55c-0b916cabf42c
 # ╠═13b7f5db-8593-4511-b540-6f40e8eb3498
 # ╠═736f187e-e5c0-4458-8438-5860ad0f2f98
