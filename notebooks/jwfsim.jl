@@ -376,7 +376,10 @@ md"""
 md""" To simulate the temporal evolution of the images we will simulate the temporal evolution of the molecules and the obtain the camera response of the corresponding molecule distribution. """
 
 # ╔═╡ 445860e3-7dcf-4f0a-bd87-049e181a7c0d
-md""" We will asume that each molecule has $\tau$ life-time for photobleaching. This means that after $t$, the molecule will have $P(t)=e^{-t/\tau}$ probability to be 'alive'."""
+md""" We will asume that each molecule has $\tau$ life-time for photobleaching. This means that after $t$, the molecule will have $P_{live}(t)=e^{-t/\tau}$ probability to be 'alive'. So the probability to die is $P_{die}(t)\equiv P_0=1-e^{-t/\tau}$"""
+
+# ╔═╡ 531b42a1-a373-4e8a-9ed9-6228f07ecfbe
+md""" In order to take into acount the effect of the illumination (the more photons hitting a molecule, the more likely is photobleaching to happen) we will scale the photobleaching probability with the illumination distribution $G$. This way, the probability for the photobleaching to happen will be $P_{die}(t,x,y)=\frac{G(x,y)}{G_{max}}(1-e^{-t/\tau})=\frac{G(x,y)}{G_{max}}P_0$"""
 
 # ╔═╡ 9f89d2bf-74c3-4a1d-ab7f-64bfde1f4dc5
 md""" Defining a frame rate of $1/\Delta t$ we can simulate the molecule evolution using Montecarlo methods."""
@@ -394,12 +397,51 @@ md""" Set $\Delta t$ in miliseconds: $(@bind dt0 NumberField(1:1000.0, default=5
 dt=dt0*ms
 
 # ╔═╡ a4528adf-f185-4bce-b695-12b0e1cecfab
-prob=exp(-uconvert(NoUnits,dt/tau))
+prob0=1-exp(-uconvert(NoUnits,dt/tau))
+
+# ╔═╡ 48ad5b24-bb6e-4628-8df0-0e00a4dc336f
+md""" Set the number of frames $N_t$ : $(@bind Nt NumberField(1:200, default=100))"""
 
 # ╔═╡ c2289697-ab87-4f11-81e6-bee3439ca3cb
 md"""
 # Functions
 """
+
+# ╔═╡ 32caa85b-f46a-4dc4-b3d8-d756bbd7e1f0
+minimum(G)
+
+# ╔═╡ 1e44b00e-70f5-4c46-a99e-939dbf5bf7f6
+function evol(poss_array0,G,prob)
+	g0=maximum(G)
+	poss_array1=zeros(size(poss_array0))
+	for i in range(1,size(poss_array0)[1])
+		for j in range(1,size(poss_array0)[2])
+			n=poss_array0[i,j]
+			g=G[i,j]
+			if n!=0
+				count=0
+				for m in range(1,n)
+					r=rand()
+					count+=1*(r>g/g0*prob0)
+				end
+				poss_array1[i,j]=count
+			end
+		end
+	end
+	poss_array1
+end
+
+# ╔═╡ 564e24e7-015f-4b5e-86a5-107909120b7f
+function evol_data(poss_array0,G,prob,N)
+	data=poss_array0
+	prev=poss_array0
+	for i in range(1,N)
+		poss_array=evol(prev,G,prob)
+		data=cat(data,poss_array,dims=3)
+		prev=poss_array
+	end
+	data
+end
 
 # ╔═╡ ed8d60e5-fe91-4048-945f-692b791bbdae
 function frame(poss_array,spxfovx,spxfovy,G,pwr,ei,sigma,dl,texp,dc,readout_n)
@@ -524,32 +566,35 @@ begin
 	heatmap(N_e)
 end
 
-# ╔═╡ 1e44b00e-70f5-4c46-a99e-939dbf5bf7f6
-function evol(poss_array0,prob)
-	poss_array1=zeros(size(poss_array))
-	for i in range(1,size(poss_array)[1])
-		for j in range(1,size(poss_array)[2])
-			n=poss_array[i,j]
-			if n!=0
-				count=0
-				for m in range(1,n)
-					r=rand()
-					count+=1*(r<prob)
-				end
-				poss_array1[i,j]=count
-			end
-		end
-	end
-	poss_array1
-end
-
 # ╔═╡ 8107ac55-4ace-47a1-a4a2-24962c918e7d
 
 begin
-ev=evol(poss_array,prob)
+ev=evol(poss_array,G,prob0)
 img=frame(ev,spxfovx,spxfovy,G,pwr,ei,sigma,dl,texp,dc,readout_n)
 heatmap(img)
 end
+
+# ╔═╡ 1b13988e-8e3b-475e-8e08-8a92e4a638e4
+datas=evol_data(poss_array,G,prob0,Nt)
+
+# ╔═╡ 646e52c4-5c4c-460c-be3d-b2382745ac89
+begin
+	datat=datas[:,:,100]
+	imt=frame(datat,spxfovx,spxfovy,G,pwr,ei,sigma,dl,texp,dc,readout_n)
+	heatmap(imt)
+end
+
+# ╔═╡ ec93b3d6-bdef-4cb9-9be7-08693174beaf
+begin
+	moleculen=[]
+	for i in range(1,Nt)
+		append!(moleculen,sum(datas[:,:,i]))
+	end
+		
+end
+
+# ╔═╡ 420756fd-4f72-4eda-90be-e81939137677
+plot(moleculen,xlabel="Frame",ylabel="Number of molecules in FOV")
 
 # ╔═╡ 03bf3bfb-2ec3-4ffa-9e83-37e21634a59d
 function tonpers(r::Float64, s::Float64, unit)
@@ -665,14 +710,22 @@ pois_rand
 # ╠═3d7cd04d-89b8-4c58-9507-2b2477155504
 # ╟─7ae42d0e-190e-40bf-872e-29524b5a0dca
 # ╟─445860e3-7dcf-4f0a-bd87-049e181a7c0d
+# ╟─531b42a1-a373-4e8a-9ed9-6228f07ecfbe
 # ╟─9f89d2bf-74c3-4a1d-ab7f-64bfde1f4dc5
-# ╠═656f048c-d0bb-4eb1-b2ea-b35ec1839da6
-# ╠═49ae9e64-7858-4bab-b89a-e6fb9028e168
-# ╠═d5f267b2-6c6a-438c-97dd-75a05080cf87
-# ╠═6c97d42b-f0e1-4e8d-a9cd-af6d79c8db72
+# ╟─656f048c-d0bb-4eb1-b2ea-b35ec1839da6
+# ╟─49ae9e64-7858-4bab-b89a-e6fb9028e168
+# ╟─d5f267b2-6c6a-438c-97dd-75a05080cf87
+# ╟─6c97d42b-f0e1-4e8d-a9cd-af6d79c8db72
 # ╠═a4528adf-f185-4bce-b695-12b0e1cecfab
 # ╠═8107ac55-4ace-47a1-a4a2-24962c918e7d
+# ╠═48ad5b24-bb6e-4628-8df0-0e00a4dc336f
+# ╠═1b13988e-8e3b-475e-8e08-8a92e4a638e4
+# ╠═646e52c4-5c4c-460c-be3d-b2382745ac89
+# ╠═ec93b3d6-bdef-4cb9-9be7-08693174beaf
+# ╠═420756fd-4f72-4eda-90be-e81939137677
 # ╠═c2289697-ab87-4f11-81e6-bee3439ca3cb
+# ╠═564e24e7-015f-4b5e-86a5-107909120b7f
+# ╠═32caa85b-f46a-4dc4-b3d8-d756bbd7e1f0
 # ╠═1e44b00e-70f5-4c46-a99e-939dbf5bf7f6
 # ╠═ed8d60e5-fe91-4048-945f-692b791bbdae
 # ╠═8d920a11-2050-4562-b55c-0b916cabf42c
