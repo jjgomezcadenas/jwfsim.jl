@@ -405,6 +405,9 @@ prob0=1-exp(-uconvert(NoUnits,dt/tau))
 # ╔═╡ 48ad5b24-bb6e-4628-8df0-0e00a4dc336f
 md""" Set the number of frames $N_t$ : $(@bind Nt NumberField(1:200, default=100))"""
 
+# ╔═╡ d5dfad8c-6b6c-4d08-93fc-7971c7bec339
+md""" Select frame number : $(@bind Nframe NumberField(1:Nt, default=Nt))"""
+
 # ╔═╡ 092ff59e-3aae-4dde-a778-973eb83acba1
 md"""
 # Data analysis
@@ -580,14 +583,6 @@ begin
 	heatmap(N_e)
 end
 
-# ╔═╡ 8107ac55-4ace-47a1-a4a2-24962c918e7d
-
-begin
-ev=evol(poss_array,G,prob0)
-img=frame(ev,spxfovx,spxfovy,G,pwr,ei,sigma,dl,texp,dc,readout_n)
-heatmap(img)
-end
-
 # ╔═╡ 1b13988e-8e3b-475e-8e08-8a92e4a638e4
 begin
 	datas=evol_data(poss_array,G,prob0,Nt)
@@ -596,7 +591,7 @@ end
 
 # ╔═╡ 646e52c4-5c4c-460c-be3d-b2382745ac89
 begin
-	datat=datas[:,:,50]
+	datat=datas[:,:,Nframe]
 	imt=frame(datat,spxfovx,spxfovy,G,pwr,ei,sigma,dl,texp,dc,readout_n)
 	heatmap(imt)
 end
@@ -664,7 +659,7 @@ begin
 end
 
 # ╔═╡ 61700541-c9c2-41d0-beb1-3dd25351313c
-plot(signalROI)
+plot(signalROI,xlabel="Frame",ylabel="Signal in ROI")
 
 # ╔═╡ 03bf3bfb-2ec3-4ffa-9e83-37e21634a59d
 function tonpers(r::Float64, s::Float64, unit)
@@ -772,11 +767,11 @@ pois_rand
 # ╟─04e8c605-f597-46af-88ed-c3c154bee3e2
 # ╠═cfa76021-fdd0-4719-8c40-0b4cac126239
 # ╠═76820384-74f6-46d9-9b70-83d93f1856ed
-# ╠═7d7fdb32-f273-42f4-ab16-a9ab3693fb97
+# ╟─7d7fdb32-f273-42f4-ab16-a9ab3693fb97
 # ╟─5de5c815-f011-4dd0-9c18-6f769a7fd36a
-# ╠═b95fed67-5021-4070-abef-d5150c6a82aa
-# ╠═8e6aac57-72cf-40d7-90de-12f5717e3420
-# ╠═631fd633-0519-42b0-89a7-eae72bba519a
+# ╟─b95fed67-5021-4070-abef-d5150c6a82aa
+# ╟─8e6aac57-72cf-40d7-90de-12f5717e3420
+# ╟─631fd633-0519-42b0-89a7-eae72bba519a
 # ╠═3d7cd04d-89b8-4c58-9507-2b2477155504
 # ╟─7ae42d0e-190e-40bf-872e-29524b5a0dca
 # ╟─445860e3-7dcf-4f0a-bd87-049e181a7c0d
@@ -786,13 +781,13 @@ pois_rand
 # ╟─49ae9e64-7858-4bab-b89a-e6fb9028e168
 # ╟─d5f267b2-6c6a-438c-97dd-75a05080cf87
 # ╟─6c97d42b-f0e1-4e8d-a9cd-af6d79c8db72
-# ╠═a4528adf-f185-4bce-b695-12b0e1cecfab
-# ╠═8107ac55-4ace-47a1-a4a2-24962c918e7d
-# ╠═48ad5b24-bb6e-4628-8df0-0e00a4dc336f
-# ╠═1b13988e-8e3b-475e-8e08-8a92e4a638e4
-# ╠═646e52c4-5c4c-460c-be3d-b2382745ac89
-# ╠═ec93b3d6-bdef-4cb9-9be7-08693174beaf
-# ╠═420756fd-4f72-4eda-90be-e81939137677
+# ╟─a4528adf-f185-4bce-b695-12b0e1cecfab
+# ╟─48ad5b24-bb6e-4628-8df0-0e00a4dc336f
+# ╟─1b13988e-8e3b-475e-8e08-8a92e4a638e4
+# ╟─d5dfad8c-6b6c-4d08-93fc-7971c7bec339
+# ╟─646e52c4-5c4c-460c-be3d-b2382745ac89
+# ╟─ec93b3d6-bdef-4cb9-9be7-08693174beaf
+# ╟─420756fd-4f72-4eda-90be-e81939137677
 # ╠═092ff59e-3aae-4dde-a778-973eb83acba1
 # ╠═095c751f-b5de-42ed-b3cc-e9d518fe0bc8
 # ╠═1c37e944-f18a-440d-ac01-bf8ecdb384c9
