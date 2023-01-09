@@ -24,6 +24,7 @@ begin
 	using DataFrames
 	using Images
 	using Colors
+	using Clustering
 	using Plots
 	using Printf
 	using InteractiveUtils
@@ -36,6 +37,8 @@ begin
 	using PhysicalConstants
 	using PoissonRandom
 	using ImageFiltering
+	using ImageSegmentation
+
 end
 
 # ╔═╡ d75ba333-2445-4828-a66c-3c33d96de16f
@@ -402,6 +405,17 @@ prob0=1-exp(-uconvert(NoUnits,dt/tau))
 # ╔═╡ 48ad5b24-bb6e-4628-8df0-0e00a4dc336f
 md""" Set the number of frames $N_t$ : $(@bind Nt NumberField(1:200, default=100))"""
 
+# ╔═╡ 092ff59e-3aae-4dde-a778-973eb83acba1
+md"""
+# Data analysis
+"""
+
+# ╔═╡ 095c751f-b5de-42ed-b3cc-e9d518fe0bc8
+md""" Select threshold : $(@bind thresh NumberField(1:1000, default=1000))"""
+
+# ╔═╡ f6aa8eee-4537-4b0e-a6b0-6efd2b27c9f0
+md""" Select cluster : $(@bind clustn NumberField(1:100,default=1))"""
+
 # ╔═╡ c2289697-ab87-4f11-81e6-bee3439ca3cb
 md"""
 # Functions
@@ -435,7 +449,7 @@ end
 function evol_data(poss_array0,G,prob,N)
 	data=poss_array0
 	prev=poss_array0
-	for i in range(1,N)
+	for i in range(1,N-1)
 		poss_array=evol(prev,G,prob)
 		data=cat(data,poss_array,dims=3)
 		prev=poss_array
@@ -451,7 +465,7 @@ function frame(poss_array,spxfovx,spxfovy,G,pwr,ei,sigma,dl,texp,dc,readout_n)
 	N_em=uconvert.(s^-1,N_inc.*N_mol*sigma)
 	sigma_dl=[dl/spxfovx,dl/spxfovy]
 	N_em_dl = imfilter(N_em,Kernel.gaussian((sigma_dl[1],sigma_dl[2])))
-	N_e=QE*N_em_dl*texp.+dc*texp.+readout_n
+	N_e=QE*N_em_dl*texp.+dc*texp.+readout_n*rand()
 end
 
 # ╔═╡ 8d920a11-2050-4562-b55c-0b916cabf42c
@@ -562,7 +576,7 @@ end
 
 # ╔═╡ 631fd633-0519-42b0-89a7-eae72bba519a
 begin
-	N_e=QE*N_em_dl*texp.+dc*texp.+readout_n
+	N_e=QE*N_em_dl*texp.+dc*texp.+readout_n*rand()
 	heatmap(N_e)
 end
 
@@ -575,11 +589,14 @@ heatmap(img)
 end
 
 # ╔═╡ 1b13988e-8e3b-475e-8e08-8a92e4a638e4
-datas=evol_data(poss_array,G,prob0,Nt)
+begin
+	datas=evol_data(poss_array,G,prob0,Nt)
+	md""" The temporal evolution of the molecule distribution is stored in an $npxx x $npxy x $Nt array (named datas). Each [:,:,i] slide represents a molecule distribution."""
+end
 
 # ╔═╡ 646e52c4-5c4c-460c-be3d-b2382745ac89
 begin
-	datat=datas[:,:,100]
+	datat=datas[:,:,50]
 	imt=frame(datat,spxfovx,spxfovy,G,pwr,ei,sigma,dl,texp,dc,readout_n)
 	heatmap(imt)
 end
@@ -595,6 +612,59 @@ end
 
 # ╔═╡ 420756fd-4f72-4eda-90be-e81939137677
 plot(moleculen,xlabel="Frame",ylabel="Number of molecules in FOV")
+
+# ╔═╡ 1c37e944-f18a-440d-ac01-bf8ecdb384c9
+begin
+	datat0=datas[:,:,1]
+	imt0=frame(datat0,spxfovx,spxfovy,G,pwr,ei,sigma,dl,texp,dc,readout_n)
+	threshim=Gray.(imt0) .>thresh
+end
+
+# ╔═╡ 1fa4b498-0c7a-404e-9760-d526a0a3d40a
+begin
+tt=Float64.(hcat(collect.(Tuple.(findall(x->x==1,threshim)))...))
+clusters=dbscan(tt,1,min_cluster_size = 5)
+end
+
+# ╔═╡ e7a683e9-7545-4f57-835b-ea4a96320596
+
+begin
+	clusteri=clusters[clustn].core_indices
+	clust=[tt[:,i] for i in clusteri]
+	clustm=Int64.(transpose.(reduce(vcat,transpose.(clust))))
+end
+
+# ╔═╡ a38b28fc-b064-4bc5-9939-845391fa0ce4
+clustm[1,:][2]
+
+# ╔═╡ 05fe65a4-ebff-4f02-b717-a83ecdd64024
+begin
+	heatmap(threshim)
+	scatter!([clustm[1,:][1]],[clustm[1,:][2]], markershape=:circle,label="ROI")
+end
+
+# ╔═╡ bf5b51d6-009b-4866-b489-2edd3d9a05a6
+begin
+	psincl=[datat0[row[1],row[2]] for row in eachrow(clustm)]
+	scatter(clustm[:,1],clustm[:,2],marker_z=psincl)
+end
+
+# ╔═╡ 7e07dafb-2ff2-4a35-b9b9-e7bc84c1ccfa
+begin
+	psROI=[]
+	signalROI=[]
+	for i in range(1,Nt)
+		datatt=datas[:,:,i]
+		imtt=frame(datatt,spxfovx,spxfovy,G,pwr,ei,sigma,dl,texp,dc,readout_n)
+		psinclt=[datatt[row[1],row[2]] for row in eachrow(clustm)]
+		siginclt=[imtt[row[1],row[2]] for row in eachrow(clustm)]
+		append!(psROI,sum(psinclt))
+		append!(signalROI,sum(siginclt))
+	end
+end
+
+# ╔═╡ 61700541-c9c2-41d0-beb1-3dd25351313c
+plot(signalROI)
 
 # ╔═╡ 03bf3bfb-2ec3-4ffa-9e83-37e21634a59d
 function tonpers(r::Float64, s::Float64, unit)
@@ -723,6 +793,17 @@ pois_rand
 # ╠═646e52c4-5c4c-460c-be3d-b2382745ac89
 # ╠═ec93b3d6-bdef-4cb9-9be7-08693174beaf
 # ╠═420756fd-4f72-4eda-90be-e81939137677
+# ╠═092ff59e-3aae-4dde-a778-973eb83acba1
+# ╠═095c751f-b5de-42ed-b3cc-e9d518fe0bc8
+# ╠═1c37e944-f18a-440d-ac01-bf8ecdb384c9
+# ╠═1fa4b498-0c7a-404e-9760-d526a0a3d40a
+# ╠═f6aa8eee-4537-4b0e-a6b0-6efd2b27c9f0
+# ╠═e7a683e9-7545-4f57-835b-ea4a96320596
+# ╠═a38b28fc-b064-4bc5-9939-845391fa0ce4
+# ╠═05fe65a4-ebff-4f02-b717-a83ecdd64024
+# ╠═bf5b51d6-009b-4866-b489-2edd3d9a05a6
+# ╠═7e07dafb-2ff2-4a35-b9b9-e7bc84c1ccfa
+# ╠═61700541-c9c2-41d0-beb1-3dd25351313c
 # ╠═c2289697-ab87-4f11-81e6-bee3439ca3cb
 # ╠═564e24e7-015f-4b5e-86a5-107909120b7f
 # ╠═32caa85b-f46a-4dc4-b3d8-d756bbd7e1f0
