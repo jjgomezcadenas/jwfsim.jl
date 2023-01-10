@@ -135,10 +135,13 @@ begin
 - Pixel array = $ntpxx x $ntpxy
 - Pixel size = $stpxx x $stpxy 
 - Sensor size= $ssensx x $ssensy 
+- Readout noise per pixel = $readout_n
+- Dark current per pixel = $dc
 - Binning= $binning
 - Pixel array (with binning) = $npxx x $npxy
 - Pixel size (with binning)= $spxx x $spxy 
-
+- Readout noise per bin = $readout_nt
+- Dark current per bin = $dct
 """
 	
 end
@@ -303,7 +306,7 @@ md""" - $\sigma$ is unknown (as far as I know), but it should be a function of t
 """
 
 # ╔═╡ b3c0f88a-074f-4ca6-8642-16801816cc36
-md""" Select cross section -log$\sigma$ in (for $\sigma$ in cm$^2$): $(@bind r NumberField(10.0:20.0, default=16))"""
+md""" Select cross section -log$\sigma$ in (for $\sigma$ in cm$^2$): $(@bind r NumberField(10.0:20.0, default=17))"""
 
 # ╔═╡ 8c9160ca-0048-4de6-8a39-ad00fe44f680
 begin
@@ -415,16 +418,26 @@ md"""
 # Data analysis
 """
 
+# ╔═╡ a6076368-fef0-4fec-aef8-44330c642489
+md""" 
+## Analyze images directly"""
+
 # ╔═╡ 095c751f-b5de-42ed-b3cc-e9d518fe0bc8
 md""" Select threshold : $(@bind thresh NumberField(1:1000, default=1000))"""
 
-# ╔═╡ f6aa8eee-4537-4b0e-a6b0-6efd2b27c9f0
-md""" Select cluster : $(@bind clustn NumberField(1:100,default=1))"""
+# ╔═╡ ca0321ca-9cb0-44f0-b94a-2ef6afd3411d
+md"""  ### Detect single step photobleaching"""
 
 # ╔═╡ c2289697-ab87-4f11-81e6-bee3439ca3cb
 md"""
 # Functions
 """
+
+# ╔═╡ 932ec313-85d5-4794-bda3-5d473b786ba0
+function camera_response(N_i,QE,dct,rnt,texp)
+	sx=size
+	QE*N_i*texp+(dct*texp.+rnt)*rand(Float64, size(N_i))
+end
 
 # ╔═╡ 32caa85b-f46a-4dc4-b3d8-d756bbd7e1f0
 minimum(G)
@@ -470,7 +483,7 @@ function frame(poss_array,spxfovx,spxfovy,G,pwr,ei,sigma,dl,texp,dc,readout_n)
 	N_em=uconvert.(s^-1,N_inc.*N_mol*sigma)
 	sigma_dl=[dl/spxfovx,dl/spxfovy]
 	N_em_dl = imfilter(N_em,Kernel.gaussian((sigma_dl[1],sigma_dl[2])))
-	N_e=QE*N_em_dl*texp.+(dct*texp.+readout_nt)*rand()
+	N_e=camera_response(N_em_dl,QE,dct,readout_nt,texp)
 end
 
 # ╔═╡ 7eada1cb-8890-4470-a9e2-f42620c9aa45
@@ -584,9 +597,19 @@ end
 
 # ╔═╡ 631fd633-0519-42b0-89a7-eae72bba519a
 begin
-	N_e=QE*N_em_dl*texp.+(dct*texp.+readout_nt)*rand()
+	N_e=camera_response(N_em_dl,QE,dct,readout_nt,texp)
 	heatmap(N_e)
 end
+
+# ╔═╡ 74f51b83-c03f-4deb-ac64-6696ef1364b6
+begin
+	vec(0*N_em)[1:Nt]
+	noise_sample=camera_response(vec(0*N_em)[1:Nt],QE,dct,readout_nt,texp)
+	plot(abs.(diff(noise_sample)))
+end
+
+# ╔═╡ b1220702-56fc-4a4e-85e3-2194f0c6266d
+size(N_em)
 
 # ╔═╡ 1b13988e-8e3b-475e-8e08-8a92e4a638e4
 begin
@@ -616,15 +639,20 @@ plot(moleculen,xlabel="Frame",ylabel="Number of molecules in FOV")
 # ╔═╡ 1c37e944-f18a-440d-ac01-bf8ecdb384c9
 begin
 	datat0=datas[:,:,1]
-	imt0=frame(datat0,spxfovx,spxfovy,G,pwr,ei,sigma,dl,texp,dc,readout_n)
+	imt0=frame(datat0,spxfovx,spxfovy,G,pwr,ei,sigma,dl,texp,dct,readout_nt)
 	threshim=Gray.(imt0) .>thresh
-end
+end;
 
 # ╔═╡ 1fa4b498-0c7a-404e-9760-d526a0a3d40a
 begin
 tt=Float64.(hcat(collect.(Tuple.(findall(x->x==1,threshim)))...))
 clusters=dbscan(tt,1,min_cluster_size = 5)
+nclust=size(clusters)[1]
+md""" There are $nclust clusters"""
 end
+
+# ╔═╡ f6aa8eee-4537-4b0e-a6b0-6efd2b27c9f0
+md""" Select cluster : $(@bind clustn NumberField(1:nclust,default=1))"""
 
 # ╔═╡ e7a683e9-7545-4f57-835b-ea4a96320596
 
@@ -632,18 +660,16 @@ begin
 	clusteri=clusters[clustn].core_indices
 	clust=[tt[:,i] for i in clusteri]
 	clustm=Int64.(transpose.(reduce(vcat,transpose.(clust))))
-end
-
-# ╔═╡ 05fe65a4-ebff-4f02-b717-a83ecdd64024
-begin
-	heatmap(threshim)
-	scatter!([clustm[1,:][1]],[clustm[1,:][2]], markershape=:circle,label="ROI")
-end
+end;
 
 # ╔═╡ bf5b51d6-009b-4866-b489-2edd3d9a05a6
 begin
+	pROIs=heatmap(threshim)
+	scatter!([clustm[1,:][1]],[clustm[1,:][2]], markershape=:circle,label="ROI")
+	
 	psincl=[imt0[row[1],row[2]] for row in eachrow(clustm)]
-	scatter(clustm[:,1],clustm[:,2],marker_z=psincl)
+	pROI=scatter(clustm[:,1],clustm[:,2],marker_z=psincl)
+	plot(pROIs,pROI,size=(1000,400))
 end
 
 # ╔═╡ 7e07dafb-2ff2-4a35-b9b9-e7bc84c1ccfa
@@ -658,10 +684,14 @@ begin
 		append!(psROI,sum(psinclt))
 		append!(signalROI,sum(siginclt))
 	end
+	
 end
 
 # ╔═╡ 61700541-c9c2-41d0-beb1-3dd25351313c
 plot(signalROI,xlabel="Frame",ylabel="Signal in ROI")
+
+# ╔═╡ 46f1ae54-e09e-4540-b2a2-a9d05a39cccd
+plot(abs.(diff(signalROI)))
 
 # ╔═╡ 03bf3bfb-2ec3-4ffa-9e83-37e21634a59d
 function tonpers(r::Float64, s::Float64, unit)
@@ -732,49 +762,49 @@ pois_rand
 # ╟─0782a2c9-7d5a-49bc-8ddb-71c57238de8b
 # ╟─55352380-ff6d-42f6-863a-e5de8cced158
 # ╟─003fab4d-5181-4b93-a889-7594598e3ccf
-# ╠═abe2369a-8a9a-4e0e-9707-4184e6d6f339
-# ╠═00cfc948-31e4-4d17-bf44-0a25c911cf68
-# ╠═18fc7474-c7b8-4092-9dfa-92f07ce3cb2a
+# ╟─abe2369a-8a9a-4e0e-9707-4184e6d6f339
+# ╟─00cfc948-31e4-4d17-bf44-0a25c911cf68
+# ╟─18fc7474-c7b8-4092-9dfa-92f07ce3cb2a
 # ╟─39ec5a5f-8e06-4143-8016-39fc9020aaa1
-# ╠═84e73dfd-a9a3-4bd4-93ce-2fc4a4e78f1b
-# ╠═b32cd1dd-a93a-41e6-a9cd-92bb9295f3ad
+# ╟─84e73dfd-a9a3-4bd4-93ce-2fc4a4e78f1b
+# ╟─b32cd1dd-a93a-41e6-a9cd-92bb9295f3ad
 # ╟─766d17b5-499a-4a28-8628-3031b023a851
 # ╟─a24aab57-2145-40de-bfd0-b768fef6d01d
-# ╠═f7f4ba8b-e1a6-4632-a785-767b2bfb646f
-# ╠═d9e3e919-f1b6-4b0b-9e07-04d5855f3587
+# ╟─f7f4ba8b-e1a6-4632-a785-767b2bfb646f
+# ╟─d9e3e919-f1b6-4b0b-9e07-04d5855f3587
 # ╟─3388900d-6fa1-4c0b-86b0-9ca541ad39ed
-# ╠═50c17b83-57f5-48dc-aaa1-22e16f627022
-# ╠═c4248750-7259-49ea-9aae-11ed7e3bf089
-# ╠═245205d3-ef94-46cf-ba0a-48810c201610
-# ╠═245c0ff7-22b2-47aa-969d-5cf4eca9831e
-# ╠═da45d069-b08d-4221-9e7d-32371090e94d
-# ╠═a45829e4-ac16-4e5d-9ce2-6007d62f37e8
-# ╠═907729d2-6b55-4afb-a3fd-5a450dd57a63
+# ╟─50c17b83-57f5-48dc-aaa1-22e16f627022
+# ╟─c4248750-7259-49ea-9aae-11ed7e3bf089
+# ╟─245205d3-ef94-46cf-ba0a-48810c201610
+# ╟─245c0ff7-22b2-47aa-969d-5cf4eca9831e
+# ╟─da45d069-b08d-4221-9e7d-32371090e94d
+# ╟─a45829e4-ac16-4e5d-9ce2-6007d62f37e8
+# ╟─907729d2-6b55-4afb-a3fd-5a450dd57a63
 # ╟─adebe61f-6355-46f3-b6d8-86fd50484366
 # ╟─2e1ff7fa-1f63-4d52-87e2-b0d61fc1f85d
-# ╠═c1af380d-8f25-4e3b-b5b3-5ac78f0a9913
+# ╟─c1af380d-8f25-4e3b-b5b3-5ac78f0a9913
 # ╟─090f9903-8eb8-4846-909e-2cd2ffeb536e
 # ╟─f778f467-001d-4484-a20f-fd85e10558b1
 # ╟─58163cae-5a87-4de9-8747-f47dc0398389
-# ╠═b3c0f88a-074f-4ca6-8642-16801816cc36
+# ╟─b3c0f88a-074f-4ca6-8642-16801816cc36
 # ╟─8c9160ca-0048-4de6-8a39-ad00fe44f680
-# ╠═f07e7613-1402-4abc-8b06-dc98df2b8c98
-# ╠═bd7a2018-d882-4891-8f15-d90e92cb1077
-# ╠═d32c1cc1-57b1-4d8e-a816-cf118e3353f1
-# ╠═1cc91044-ff75-4cae-9513-fa99b19a4697
-# ╠═cb384e7d-c506-4206-82f6-a34ac837fe66
-# ╠═c063e645-f73d-41d0-9faa-253972d73f1c
-# ╠═1d5d2334-7973-48c3-a9c4-e0617379ec2f
-# ╠═40645b82-f470-4cab-bb63-d775e289d8b0
+# ╟─f07e7613-1402-4abc-8b06-dc98df2b8c98
+# ╟─bd7a2018-d882-4891-8f15-d90e92cb1077
+# ╟─d32c1cc1-57b1-4d8e-a816-cf118e3353f1
+# ╟─1cc91044-ff75-4cae-9513-fa99b19a4697
+# ╟─cb384e7d-c506-4206-82f6-a34ac837fe66
+# ╟─c063e645-f73d-41d0-9faa-253972d73f1c
+# ╟─1d5d2334-7973-48c3-a9c4-e0617379ec2f
+# ╟─40645b82-f470-4cab-bb63-d775e289d8b0
 # ╟─04e8c605-f597-46af-88ed-c3c154bee3e2
-# ╠═cfa76021-fdd0-4719-8c40-0b4cac126239
-# ╠═76820384-74f6-46d9-9b70-83d93f1856ed
+# ╟─cfa76021-fdd0-4719-8c40-0b4cac126239
+# ╟─76820384-74f6-46d9-9b70-83d93f1856ed
 # ╟─7d7fdb32-f273-42f4-ab16-a9ab3693fb97
 # ╟─5de5c815-f011-4dd0-9c18-6f769a7fd36a
 # ╟─b95fed67-5021-4070-abef-d5150c6a82aa
 # ╟─8e6aac57-72cf-40d7-90de-12f5717e3420
-# ╠═631fd633-0519-42b0-89a7-eae72bba519a
-# ╠═3d7cd04d-89b8-4c58-9507-2b2477155504
+# ╟─631fd633-0519-42b0-89a7-eae72bba519a
+# ╟─3d7cd04d-89b8-4c58-9507-2b2477155504
 # ╟─7ae42d0e-190e-40bf-872e-29524b5a0dca
 # ╟─445860e3-7dcf-4f0a-bd87-049e181a7c0d
 # ╟─531b42a1-a373-4e8a-9ed9-6228f07ecfbe
@@ -787,20 +817,25 @@ pois_rand
 # ╟─48ad5b24-bb6e-4628-8df0-0e00a4dc336f
 # ╟─1b13988e-8e3b-475e-8e08-8a92e4a638e4
 # ╟─d5dfad8c-6b6c-4d08-93fc-7971c7bec339
-# ╟─646e52c4-5c4c-460c-be3d-b2382745ac89
+# ╠═646e52c4-5c4c-460c-be3d-b2382745ac89
 # ╟─ec93b3d6-bdef-4cb9-9be7-08693174beaf
 # ╟─420756fd-4f72-4eda-90be-e81939137677
-# ╠═092ff59e-3aae-4dde-a778-973eb83acba1
-# ╠═095c751f-b5de-42ed-b3cc-e9d518fe0bc8
+# ╟─092ff59e-3aae-4dde-a778-973eb83acba1
+# ╟─a6076368-fef0-4fec-aef8-44330c642489
+# ╟─095c751f-b5de-42ed-b3cc-e9d518fe0bc8
 # ╠═1c37e944-f18a-440d-ac01-bf8ecdb384c9
-# ╠═1fa4b498-0c7a-404e-9760-d526a0a3d40a
-# ╠═f6aa8eee-4537-4b0e-a6b0-6efd2b27c9f0
+# ╟─1fa4b498-0c7a-404e-9760-d526a0a3d40a
+# ╟─f6aa8eee-4537-4b0e-a6b0-6efd2b27c9f0
 # ╠═e7a683e9-7545-4f57-835b-ea4a96320596
-# ╠═05fe65a4-ebff-4f02-b717-a83ecdd64024
 # ╠═bf5b51d6-009b-4866-b489-2edd3d9a05a6
-# ╠═7e07dafb-2ff2-4a35-b9b9-e7bc84c1ccfa
+# ╟─7e07dafb-2ff2-4a35-b9b9-e7bc84c1ccfa
 # ╠═61700541-c9c2-41d0-beb1-3dd25351313c
+# ╠═ca0321ca-9cb0-44f0-b94a-2ef6afd3411d
+# ╠═46f1ae54-e09e-4540-b2a2-a9d05a39cccd
+# ╠═74f51b83-c03f-4deb-ac64-6696ef1364b6
 # ╠═c2289697-ab87-4f11-81e6-bee3439ca3cb
+# ╠═b1220702-56fc-4a4e-85e3-2194f0c6266d
+# ╠═932ec313-85d5-4794-bda3-5d473b786ba0
 # ╠═564e24e7-015f-4b5e-86a5-107909120b7f
 # ╠═32caa85b-f46a-4dc4-b3d8-d756bbd7e1f0
 # ╠═1e44b00e-70f5-4c46-a99e-939dbf5bf7f6
