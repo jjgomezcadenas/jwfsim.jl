@@ -433,10 +433,14 @@ md"""
 # Functions
 """
 
+# ╔═╡ b1220702-56fc-4a4e-85e3-2194f0c6266d
+dct*texp.+readout_nt
+
 # ╔═╡ 932ec313-85d5-4794-bda3-5d473b786ba0
 function camera_response(N_i,QE,dct,rnt,texp)
 	sx=size
-	QE*N_i*texp+(dct*texp.+rnt)*rand(Float64, size(N_i))
+	sigma=dct*texp.+rnt
+	QE*N_i*texp+rand(Normal(0,sigma), size(N_i))
 end
 
 # ╔═╡ 32caa85b-f46a-4dc4-b3d8-d756bbd7e1f0
@@ -483,7 +487,7 @@ function frame(poss_array,spxfovx,spxfovy,G,pwr,ei,sigma,dl,texp,dc,readout_n)
 	N_em=uconvert.(s^-1,N_inc.*N_mol*sigma)
 	sigma_dl=[dl/spxfovx,dl/spxfovy]
 	N_em_dl = imfilter(N_em,Kernel.gaussian((sigma_dl[1],sigma_dl[2])))
-	N_e=camera_response(N_em_dl,QE,dct,readout_nt,texp)
+	N_e=camera_response(N_em_dl,QE,dc,readout_n,texp)
 end
 
 # ╔═╡ 7eada1cb-8890-4470-a9e2-f42620c9aa45
@@ -601,16 +605,6 @@ begin
 	heatmap(N_e)
 end
 
-# ╔═╡ 74f51b83-c03f-4deb-ac64-6696ef1364b6
-begin
-	vec(0*N_em)[1:Nt]
-	noise_sample=camera_response(vec(0*N_em)[1:Nt],QE,dct,readout_nt,texp)
-	plot(abs.(diff(noise_sample)))
-end
-
-# ╔═╡ b1220702-56fc-4a4e-85e3-2194f0c6266d
-size(N_em)
-
 # ╔═╡ 1b13988e-8e3b-475e-8e08-8a92e4a638e4
 begin
 	datas=evol_data(poss_array,G,prob0,Nt)
@@ -620,7 +614,7 @@ end
 # ╔═╡ 646e52c4-5c4c-460c-be3d-b2382745ac89
 begin
 	datat=datas[:,:,Nframe]
-	imt=frame(datat,spxfovx,spxfovy,G,pwr,ei,sigma,dl,texp,dc,readout_n)
+	imt=frame(datat,spxfovx,spxfovy,G,pwr,ei,sigma,dl,texp,dct,readout_nt)
 	heatmap(imt)
 end
 
@@ -651,6 +645,9 @@ nclust=size(clusters)[1]
 md""" There are $nclust clusters"""
 end
 
+# ╔═╡ 7a53b395-cab1-44b0-b802-12fe32833e22
+clusters[1].size
+
 # ╔═╡ f6aa8eee-4537-4b0e-a6b0-6efd2b27c9f0
 md""" Select cluster : $(@bind clustn NumberField(1:nclust,default=1))"""
 
@@ -661,6 +658,12 @@ begin
 	clust=[tt[:,i] for i in clusteri]
 	clustm=Int64.(transpose.(reduce(vcat,transpose.(clust))))
 end;
+
+# ╔═╡ e053e5d8-fde0-46b7-936c-e05360ecf479
+s_noise=dct*texp.+readout_nt*sqrt(clusters[clustn].size)
+
+# ╔═╡ ba4f3b05-d7eb-4a2f-b140-63115e26cd07
+th_ssp=6*s_noise
 
 # ╔═╡ bf5b51d6-009b-4866-b489-2edd3d9a05a6
 begin
@@ -678,7 +681,7 @@ begin
 	signalROI=[]
 	for i in range(1,Nt)
 		datatt=datas[:,:,i]
-		imtt=frame(datatt,spxfovx,spxfovy,G,pwr,ei,sigma,dl,texp,dc,readout_n)
+		imtt=frame(datatt,spxfovx,spxfovy,G,pwr,ei,sigma,dl,texp,dct,readout_nt)
 		psinclt=[datatt[row[1],row[2]] for row in eachrow(clustm)]
 		siginclt=[imtt[row[1],row[2]] for row in eachrow(clustm)]
 		append!(psROI,sum(psinclt))
@@ -691,7 +694,10 @@ end
 plot(signalROI,xlabel="Frame",ylabel="Signal in ROI")
 
 # ╔═╡ 46f1ae54-e09e-4540-b2a2-a9d05a39cccd
-plot(abs.(diff(signalROI)))
+begin
+	plot(abs.(diff(signalROI)))
+	hline!([th_ssp], linestyle=:dash)
+end
 
 # ╔═╡ 03bf3bfb-2ec3-4ffa-9e83-37e21634a59d
 function tonpers(r::Float64, s::Float64, unit)
@@ -824,15 +830,17 @@ pois_rand
 # ╟─a6076368-fef0-4fec-aef8-44330c642489
 # ╟─095c751f-b5de-42ed-b3cc-e9d518fe0bc8
 # ╠═1c37e944-f18a-440d-ac01-bf8ecdb384c9
-# ╟─1fa4b498-0c7a-404e-9760-d526a0a3d40a
+# ╠═1fa4b498-0c7a-404e-9760-d526a0a3d40a
+# ╠═7a53b395-cab1-44b0-b802-12fe32833e22
 # ╟─f6aa8eee-4537-4b0e-a6b0-6efd2b27c9f0
 # ╠═e7a683e9-7545-4f57-835b-ea4a96320596
 # ╠═bf5b51d6-009b-4866-b489-2edd3d9a05a6
-# ╟─7e07dafb-2ff2-4a35-b9b9-e7bc84c1ccfa
+# ╠═7e07dafb-2ff2-4a35-b9b9-e7bc84c1ccfa
 # ╠═61700541-c9c2-41d0-beb1-3dd25351313c
 # ╠═ca0321ca-9cb0-44f0-b94a-2ef6afd3411d
+# ╠═e053e5d8-fde0-46b7-936c-e05360ecf479
+# ╠═ba4f3b05-d7eb-4a2f-b140-63115e26cd07
 # ╠═46f1ae54-e09e-4540-b2a2-a9d05a39cccd
-# ╠═74f51b83-c03f-4deb-ac64-6696ef1364b6
 # ╠═c2289697-ab87-4f11-81e6-bee3439ca3cb
 # ╠═b1220702-56fc-4a4e-85e3-2194f0c6266d
 # ╠═932ec313-85d5-4794-bda3-5d473b786ba0
