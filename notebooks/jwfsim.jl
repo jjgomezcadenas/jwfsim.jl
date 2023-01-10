@@ -129,6 +129,8 @@ begin
 	QE=0.8
 	readout_n=0.8
 	dc=0.06s^-1
+	readout_nt=readout_n*binning
+	dct=dc*binning
 	md"""
 - Pixel array = $ntpxx x $ntpxy
 - Pixel size = $stpxx x $stpxy 
@@ -468,8 +470,11 @@ function frame(poss_array,spxfovx,spxfovy,G,pwr,ei,sigma,dl,texp,dc,readout_n)
 	N_em=uconvert.(s^-1,N_inc.*N_mol*sigma)
 	sigma_dl=[dl/spxfovx,dl/spxfovy]
 	N_em_dl = imfilter(N_em,Kernel.gaussian((sigma_dl[1],sigma_dl[2])))
-	N_e=QE*N_em_dl*texp.+dc*texp.+readout_n*rand()
+	N_e=QE*N_em_dl*texp.+(dct*texp.+readout_nt)*rand()
 end
+
+# ╔═╡ 7eada1cb-8890-4470-a9e2-f42620c9aa45
+rand()
 
 # ╔═╡ 8d920a11-2050-4562-b55c-0b916cabf42c
 function toimage(data,xran0,yran0,spxfovx0,spxfovy0)
@@ -579,7 +584,7 @@ end
 
 # ╔═╡ 631fd633-0519-42b0-89a7-eae72bba519a
 begin
-	N_e=QE*N_em_dl*texp.+dc*texp.+readout_n*rand()
+	N_e=QE*N_em_dl*texp.+(dct*texp.+readout_nt)*rand()
 	heatmap(N_e)
 end
 
@@ -629,9 +634,6 @@ begin
 	clustm=Int64.(transpose.(reduce(vcat,transpose.(clust))))
 end
 
-# ╔═╡ a38b28fc-b064-4bc5-9939-845391fa0ce4
-clustm[1,:][2]
-
 # ╔═╡ 05fe65a4-ebff-4f02-b717-a83ecdd64024
 begin
 	heatmap(threshim)
@@ -640,7 +642,7 @@ end
 
 # ╔═╡ bf5b51d6-009b-4866-b489-2edd3d9a05a6
 begin
-	psincl=[datat0[row[1],row[2]] for row in eachrow(clustm)]
+	psincl=[imt0[row[1],row[2]] for row in eachrow(clustm)]
 	scatter(clustm[:,1],clustm[:,2],marker_z=psincl)
 end
 
@@ -771,7 +773,7 @@ pois_rand
 # ╟─5de5c815-f011-4dd0-9c18-6f769a7fd36a
 # ╟─b95fed67-5021-4070-abef-d5150c6a82aa
 # ╟─8e6aac57-72cf-40d7-90de-12f5717e3420
-# ╟─631fd633-0519-42b0-89a7-eae72bba519a
+# ╠═631fd633-0519-42b0-89a7-eae72bba519a
 # ╠═3d7cd04d-89b8-4c58-9507-2b2477155504
 # ╟─7ae42d0e-190e-40bf-872e-29524b5a0dca
 # ╟─445860e3-7dcf-4f0a-bd87-049e181a7c0d
@@ -794,7 +796,6 @@ pois_rand
 # ╠═1fa4b498-0c7a-404e-9760-d526a0a3d40a
 # ╠═f6aa8eee-4537-4b0e-a6b0-6efd2b27c9f0
 # ╠═e7a683e9-7545-4f57-835b-ea4a96320596
-# ╠═a38b28fc-b064-4bc5-9939-845391fa0ce4
 # ╠═05fe65a4-ebff-4f02-b717-a83ecdd64024
 # ╠═bf5b51d6-009b-4866-b489-2edd3d9a05a6
 # ╠═7e07dafb-2ff2-4a35-b9b9-e7bc84c1ccfa
@@ -804,6 +805,7 @@ pois_rand
 # ╠═32caa85b-f46a-4dc4-b3d8-d756bbd7e1f0
 # ╠═1e44b00e-70f5-4c46-a99e-939dbf5bf7f6
 # ╠═ed8d60e5-fe91-4048-945f-692b791bbdae
+# ╠═7eada1cb-8890-4470-a9e2-f42620c9aa45
 # ╠═8d920a11-2050-4562-b55c-0b916cabf42c
 # ╠═13b7f5db-8593-4511-b540-6f40e8eb3498
 # ╠═736f187e-e5c0-4458-8438-5860ad0f2f98
