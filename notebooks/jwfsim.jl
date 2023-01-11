@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.14
+# v0.19.19
 
 using Markdown
 using InteractiveUtils
@@ -100,18 +100,78 @@ The simulation has several distinct ingredients:
 
 """
 
-# ╔═╡ d8ea1458-304a-462d-abdc-24ba32d3d8b0
+# ╔═╡ 23bf7348-f059-4f84-b75d-2c55cc0a09cb
+"""
+
+Defines a CCD
+
+# Fields
+
+	-`QE`         : quantum efficiency
+	-`dc`         : dark current (in rms e-)
+	-`readout_n`  : readout noise (in rms e-)
+	-`ntpxx`      : number of physical pixels in x
+	-`ntpxy`      : number of physicalpixels in y
+	-`stpxx`      : physical pixel size in x
+	-`stpxx`      : physical pixel size in y
+	-`bining`     : defines the software bins
+	-`ssensx`     : physical size CCD along x
+	-`ssensy`     : physical size CCD along y
+	-`npxx`       : number of sotware pixels in x
+	-`npxx`       : number of sotware pixels in y
+	-`readout_nt` : readout noise per bin (in rms e-)
+	-`dct`        : dark current per bin
+"""
+struct CCD
+	QE::Float64
+	ntpxx::Integer 
+	ntpxy::Integer 
+	stpxx::Unitful.Length
+	stpxy::Unitful.Length
+	readout_n::Float64
+	dc::typeof(1.0s^-1)
+	binning::Integer
+	npxx::Integer 
+	npxy::Integer
+	spxx::Unitful.Length
+	spxy::Unitful.Length
+	readout_nt::Float64
+	dct::typeof(1.0s^-1)
+	ssensx::Unitful.Length
+	ssensy::Unitful.Length
+	function CCD(QE, ntpxx,ntpxy, stpxx, stpxy, readout_n, dc, binning)
+		npxx       = Int(ntpxx/sqrt(binning))
+		npxy       = Int(ntpxy/sqrt(binning))
+		spxx       = stpxx * sqrt(binning)
+		spxy       = stpxy * sqrt(binning)
+		ssensx     = stpxx * ntpxx
+	    ssensy     = stpxy * ntpxy
+		readout_nt = readout_n * binning
+		dct        = dc * binning
+		new(QE, ntpxx, ntpxy, stpxx, stpxy, readout_n, dc, binning, npxx, npxy, spxx, spxy, readout_nt, dct, ssensx, ssensy)
+	end
+end
+
+# ╔═╡ f3129831-54be-41e0-a30c-0d31b09a78b1
+ccd = CCD(0.8, 2048, 2048,  6.5μm,  6.5μm,  0.8, 0.06s^-1, 16)
+
+# ╔═╡ f2cf4a76-9a54-40d1-995f-c13ac357c341
+begin
+
 md"""
-# Set up
+- Pixel array = $(ccd.ntpxx) x $(ccd.ntpxy)
+- Pixel size = $(ccd.stpxx) x $(ccd.stpxy) 
+- Sensor size= $(ccd.ssensx) x $(ccd.ssensy) 
+- Readout noise per pixel = $(ccd.readout_n)
+- Dark current per pixel = $(ccd.dc)
+- Binning= $(ccd.binning)
+- Pixel array (with binning) = $(ccd.npxx) x $(ccd.npxy)
+- Pixel size (with binning)= $(ccd.spxx) x $(ccd.spxy) 
+- Readout noise per bin = $(ccd.readout_nt)
+- Dark current per bin = $(ccd.dct)
 """
-
-# ╔═╡ 92db42ec-1f18-4277-8612-7613c7c32c40
-md""" 
-## Camera specs
-
- In order to simulate the images we need to know the number of pixels, their sizes, binning, noise, QE...
-"""
-
+	
+end
 
 # ╔═╡ d7f3fe4f-455a-435b-98f7-60c00e96c1eb
 begin
@@ -145,6 +205,19 @@ begin
 """
 	
 end
+
+# ╔═╡ d8ea1458-304a-462d-abdc-24ba32d3d8b0
+md"""
+# Set up
+"""
+
+# ╔═╡ 92db42ec-1f18-4277-8612-7613c7c32c40
+md""" 
+## Camera specs
+
+ In order to simulate the images we need to know the number of pixels, their sizes, binning, noise, QE...
+"""
+
 
 # ╔═╡ f506db9e-3fe3-4963-856a-be91d91e8266
 md""" 
@@ -754,10 +827,13 @@ pois_rand
 # ╠═558dbadc-cb83-4cfb-a05f-1f57b62bcf1d
 # ╠═6497410d-d1eb-4c06-9f98-1da578fb683f
 # ╟─40bcafee-88a9-4c7b-a611-d0599e4567e9
-# ╟─27b5dc4d-b688-4414-8fcb-97c4ef1d680d
+# ╠═27b5dc4d-b688-4414-8fcb-97c4ef1d680d
+# ╠═d7f3fe4f-455a-435b-98f7-60c00e96c1eb
 # ╟─d8ea1458-304a-462d-abdc-24ba32d3d8b0
 # ╟─92db42ec-1f18-4277-8612-7613c7c32c40
-# ╠═d7f3fe4f-455a-435b-98f7-60c00e96c1eb
+# ╠═23bf7348-f059-4f84-b75d-2c55cc0a09cb
+# ╠═f3129831-54be-41e0-a30c-0d31b09a78b1
+# ╠═f2cf4a76-9a54-40d1-995f-c13ac357c341
 # ╟─f506db9e-3fe3-4963-856a-be91d91e8266
 # ╠═9eea388f-c453-480d-b022-2340fe880b89
 # ╠═63e4aa43-b606-4077-9205-e49fd7ac3b21
