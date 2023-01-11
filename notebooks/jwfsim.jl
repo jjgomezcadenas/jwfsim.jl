@@ -613,6 +613,19 @@ if sch=="Molarity"
 	md""" Select the molarity of the solution (in -log(M)): $(@bind b NumberField(5.0:15.0, default=12))"""
 end
 
+# ╔═╡ e21f4df7-d8f1-41f7-9a52-c3bcea812cf8
+dxy = smm/uconvert(mm,1.0μm)
+
+# ╔═╡ fcef739b-efe1-4a9a-8d84-2ad288cea5d9
+md"""
+- The array defining the simulation is obtained from the size of the glass ($smm) and the a granularity of the simulation (1μm).
+
+- The dimension of the arry is ($(dxy), $(dxy))
+"""
+
+# ╔═╡ 5a1ed559-3c34-41cb-aee9-15899063e2f9
+
+
 # ╔═╡ 39ec5a5f-8e06-4143-8016-39fc9020aaa1
 md"""
 Once we have the mean value of the number of molecules per micron square (which we assume to be the granularity of our simulation, and call nmu2), we can simulate the molecule distribution on the sample.
@@ -1186,18 +1199,21 @@ pois_rand
 # ╠═8f769fdd-6546-4745-be19-e9ac8e7e1f08
 # ╠═cc82232e-fc86-413f-8b73-8044b4de6260
 # ╠═91be4032-1813-445d-915c-46cca9cb0771
-# ╟─790af81b-45ce-4fae-ab0b-7fb52b87a2af
-# ╟─018997ec-0c72-4677-b6d1-e8dafa1c2811
+# ╠═790af81b-45ce-4fae-ab0b-7fb52b87a2af
+# ╠═018997ec-0c72-4677-b6d1-e8dafa1c2811
 # ╟─0782a2c9-7d5a-49bc-8ddb-71c57238de8b
-# ╟─55352380-ff6d-42f6-863a-e5de8cced158
-# ╟─003fab4d-5181-4b93-a889-7594598e3ccf
+# ╠═55352380-ff6d-42f6-863a-e5de8cced158
+# ╠═003fab4d-5181-4b93-a889-7594598e3ccf
 # ╟─abe2369a-8a9a-4e0e-9707-4184e6d6f339
-# ╟─00cfc948-31e4-4d17-bf44-0a25c911cf68
-# ╟─18fc7474-c7b8-4092-9dfa-92f07ce3cb2a
-# ╟─39ec5a5f-8e06-4143-8016-39fc9020aaa1
-# ╟─84e73dfd-a9a3-4bd4-93ce-2fc4a4e78f1b
+# ╠═00cfc948-31e4-4d17-bf44-0a25c911cf68
+# ╠═e21f4df7-d8f1-41f7-9a52-c3bcea812cf8
+# ╠═fcef739b-efe1-4a9a-8d84-2ad288cea5d9
+# ╠═5a1ed559-3c34-41cb-aee9-15899063e2f9
+# ╠═18fc7474-c7b8-4092-9dfa-92f07ce3cb2a
+# ╠═39ec5a5f-8e06-4143-8016-39fc9020aaa1
+# ╠═84e73dfd-a9a3-4bd4-93ce-2fc4a4e78f1b
 # ╟─b32cd1dd-a93a-41e6-a9cd-92bb9295f3ad
-# ╟─766d17b5-499a-4a28-8628-3031b023a851
+# ╠═766d17b5-499a-4a28-8628-3031b023a851
 # ╠═a24aab57-2145-40de-bfd0-b768fef6d01d
 # ╠═f7f4ba8b-e1a6-4632-a785-767b2bfb646f
 # ╠═d9e3e919-f1b6-4b0b-9e07-04d5855f3587
