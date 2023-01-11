@@ -662,6 +662,39 @@ md"""
 The field of view of the camera scales with the magnification of the system. The size  of the field of view will be the sensor size divided by the magnfication, and the resolution will be given by the pixel size divided by the magnification.
 """
 
+# ╔═╡ 94cdcbf7-f082-4500-9638-d1a7741faefa
+"""
+	struct FOV
+
+Represent a field of view
+
+# Fields
+- `ccd`  : A CCD 
+- `OBJ`  : An Obective
+- `sfovx::Unitful.Length`      : size (x) of Fov
+- `sfovy::Unitful.Length`      : size (y) of Fov
+- `sfovx::Unitful.Length`      : size (x) of Fov
+- `spxfovx::Unitful.Length`    : resolution (x) of Fov
+- `spxfovy::Unitful.Length`    : resolution (y) of Fov
+
+"""
+struct FOV
+    ccd::CCD
+    obj::Objective
+	sfovx::Unitful.Length
+	sfovy::Unitful.Length
+	spxfovx::Unitful.Length
+	spxfovy::Unitful.Length
+
+	function FOV(ccd,obj)
+		sfovx   = ccd.ssensx/obj.M
+		sfovy   = ccd.ssensy/obj.M
+		spxfovx = ccd.spxx/obj.M
+		spxfovy = ccd.spxy/obj.M
+		new(ccd,obj, sfovx, sfovy, spxfovx, spxfovy)
+	end
+end
+
 # ╔═╡ f7f4ba8b-e1a6-4632-a785-767b2bfb646f
 begin
 	sfovx=ssensx/mag
@@ -673,6 +706,9 @@ begin
 	- Resolution = $spxfovx x $spxfovy 
 	"""
 end
+
+# ╔═╡ 15f4b4ec-4ce2-49bb-bacf-1cc8a0beaf82
+fov = FOV(ccd, ob)
 
 # ╔═╡ 245c0ff7-22b2-47aa-969d-5cf4eca9831e
 md""" ## Molecule distribution in th FOV"""
@@ -1224,7 +1260,9 @@ pois_rand
 # ╟─b32cd1dd-a93a-41e6-a9cd-92bb9295f3ad
 # ╠═766d17b5-499a-4a28-8628-3031b023a851
 # ╠═a24aab57-2145-40de-bfd0-b768fef6d01d
+# ╠═94cdcbf7-f082-4500-9638-d1a7741faefa
 # ╠═f7f4ba8b-e1a6-4632-a785-767b2bfb646f
+# ╠═15f4b4ec-4ce2-49bb-bacf-1cc8a0beaf82
 # ╠═d9e3e919-f1b6-4b0b-9e07-04d5855f3587
 # ╟─3388900d-6fa1-4c0b-86b0-9ca541ad39ed
 # ╟─50c17b83-57f5-48dc-aaa1-22e16f627022
