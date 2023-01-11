@@ -100,6 +100,52 @@ The simulation has several distinct ingredients:
 
 """
 
+# ╔═╡ d7f3fe4f-455a-435b-98f7-60c00e96c1eb
+begin
+	ntpxx=2048
+	ntpxy=2048
+	stpxx=6.5μm
+	stpxy=6.5μm
+	binning=16
+	ssensx=stpxx*ntpxx
+	ssensy=stpxy*ntpxy
+	npxx=Int(ntpxx/sqrt(binning))
+	npxy=Int(ntpxy/sqrt(binning))
+	spxx=stpxx*sqrt(binning)
+	spxy=stpxy*sqrt(binning)
+	QE=0.8
+	readout_n=0.8
+	dc=0.06s^-1
+	readout_nt=readout_n*binning
+	dct=dc*binning
+	md"""
+- Pixel array = $ntpxx x $ntpxy
+- Pixel size = $stpxx x $stpxy 
+- Sensor size= $ssensx x $ssensy 
+- Readout noise per pixel = $readout_n
+- Dark current per pixel = $dc
+- Binning= $binning
+- Pixel array (with binning) = $npxx x $npxy
+- Pixel size (with binning)= $spxx x $spxy 
+- Readout noise per bin = $readout_nt
+- Dark current per bin = $dct
+"""
+	
+end
+
+# ╔═╡ d8ea1458-304a-462d-abdc-24ba32d3d8b0
+md"""
+# Set up
+"""
+
+# ╔═╡ 92db42ec-1f18-4277-8612-7613c7c32c40
+md""" 
+## Camera specs
+
+ In order to simulate the images we need to know the number of pixels, their sizes, binning, noise, QE...
+"""
+
+
 # ╔═╡ 23bf7348-f059-4f84-b75d-2c55cc0a09cb
 """
 
@@ -173,56 +219,262 @@ md"""
 	
 end
 
-# ╔═╡ d7f3fe4f-455a-435b-98f7-60c00e96c1eb
-begin
-	ntpxx=2048
-	ntpxy=2048
-	stpxx=6.5μm
-	stpxy=6.5μm
-	binning=16
-	ssensx=stpxx*ntpxx
-	ssensy=stpxy*ntpxy
-	npxx=Int(ntpxx/sqrt(binning))
-	npxy=Int(ntpxy/sqrt(binning))
-	spxx=stpxx*sqrt(binning)
-	spxy=stpxy*sqrt(binning)
-	QE=0.8
-	readout_n=0.8
-	dc=0.06s^-1
-	readout_nt=readout_n*binning
-	dct=dc*binning
-	md"""
-- Pixel array = $ntpxx x $ntpxy
-- Pixel size = $stpxx x $stpxy 
-- Sensor size= $ssensx x $ssensy 
-- Readout noise per pixel = $readout_n
-- Dark current per pixel = $dc
-- Binning= $binning
-- Pixel array (with binning) = $npxx x $npxy
-- Pixel size (with binning)= $spxx x $spxy 
-- Readout noise per bin = $readout_nt
-- Dark current per bin = $dct
+# ╔═╡ c4dea97d-74bb-4467-86c8-814d85a01df9
+md"""
+## Formulas
 """
-	
+
+# ╔═╡ 67cbfe76-80ac-446c-816e-613bdf024971
+"""
+	photon_energy(λ::Unitful.Length)
+
+Given wavelength of photon return its energy.
+# Fields
+
+- `λ::Unitful.Length`  : Photon wavelength
+
+"""
+function photon_energy(λ::Unitful.Length)
+	uconvert(eV, λ, Spectral())
 end
 
-# ╔═╡ d8ea1458-304a-462d-abdc-24ba32d3d8b0
-md"""
-# Set up
+# ╔═╡ d16bb7b3-749f-46a3-940e-9a3cbbe78bee
 """
-
-# ╔═╡ 92db42ec-1f18-4277-8612-7613c7c32c40
-md""" 
-## Camera specs
-
- In order to simulate the images we need to know the number of pixels, their sizes, binning, noise, QE...
+	n_photons(λ::Unitful.Length, p::Unitful.Power)
+Rate of photons (number of photons per unit time) corresponding to a wavelength
+λ and a power P
+# Fields
+- `λ::Unitful.Length` : photon wavelength
+- `p::Unitful.Power`  : Power
 """
-
+function n_photons(λ::Unitful.Length, p::Unitful.Power)
+	uconvert(Hz, p / photon_energy(λ))
+end
 
 # ╔═╡ f506db9e-3fe3-4963-856a-be91d91e8266
 md""" 
 ## Laser specs
 """
+
+# ╔═╡ 2badeb9a-afa3-4a66-a06a-a7a88397756a
+md"### Gaussian beam formulas
+$g(r,z) = e^{-2(r/w(z))^2}$
+$w(z) = w_0 \sqrt{1 + (\frac{z}{z_r})^2}$
+$I(r,z) = I_0 [\frac{w_0}{w(z)}]^2 g(r,z)$
+$z_r = \pi  \frac{w_0^2}{\lambda}$
+The formulas verify the following limits:
+$I(r, 0) = I_0 e^{-2(r/w_0)^2}$
+$I(0, z) = I_0 [\frac{w_0}{w(z)}]^2 = \frac{I_0}{1 + (z/z_r)^2}$
+Which has maximum value ($I_0$) at $z=0$ and then decreases as z increases. For $z=z_r$ the intensity along the axis is reduced by half. 
+for $z << z_r, w(z) = w_0$, and:
+$I(0, z) = I_0$
+$I(r, z) = I_0 e^{-2(r/w_0)^2}$
+
+Thus, the beam intensity falls exponentially with the radius r and is a constant ($I_0$) along the longitudinal axis, for $r=0$.
+
+The beam power is obtained integrating the irradiance at any transverse plane. For simplicity we can choose $z=0$:
+$P = \int_0^\infty I(r,0) 2 \pi r dr = 2 \pi I_0 \int e^{-2(r/w_0)^2} r dr$ 
+
+Define $y = \frac{2 r^2}{w_0^2}$. Then $dy = \frac{4 r}{w_0^2} dr$, $dr = \frac{w_0^2}{4 r} dy$ and:
+
+$P = 2 \pi I_0 \frac{w_0^2}{4} \int_0^\infty e^{-y} dy$ 
+
+Since $\int_0^\infty e^-y dy = 1$, we find:
+
+$P = I_0 \frac{\pi w_0^2}{2}$
+
+or:
+
+$I_0 = \frac{2 P}{\pi w_0^2}$ 
+"
+
+# ╔═╡ 61d273f1-f3cb-41d1-b181-917753182515
+abstract type Laser end
+
+# ╔═╡ ebf16df7-32d2-4c26-bf0f-f228d3fa7fff
+"""
+	n_photons(laser::Laser)
+Rate of photons (number of photons per unit time) produced by a laser
+# Fields
+- `laser::Laser`     : Laser
+- `t::Unitful.Time`  : Time in which target is illuminated
+"""
+function n_photons(laser::Laser)
+	uconvert(Hz, laser.P / photon_energy(laser.λ))
+end
+
+
+# ╔═╡ f01189ac-8205-4e9c-b6d7-af8d70920016
+
+
+"""
+	struct CLaser <: Laser
+
+Simple representation of a continous laser
+
+# Fields
+- `λ::typeof(1.0nm)`  : Laser wavelength
+- `P::typeof(1.0mW)`  : Power
+
+"""
+struct CLaser <: Laser
+	λ::Unitful.Length
+	P::Unitful.Power
+end
+
+# ╔═╡ 9ad36d3b-d2e9-43ec-b698-cf5e032ec359
+
+
+# ╔═╡ 0adc1276-b6ce-49a2-a824-c1f2103e028e
+"""
+	GaussianLaser 
+	
+	Representation of a Gaussian laser defined by a laser, the location of the waist (z0) and the waist radius (w0)  
+	
+	# Fields
+	- `laser::Laser`       : A Laser  
+	- `w0::Unitful.Length` : radius of the waist  
+	- `zr::Unitful.Length` : z for which the intensity of the beam is reduced by half
+	- `I0::typeof(1.0mW/cm^2)` : Intensity of the beam at (0,0) (computed from w0)
+	- `ρ0::typeof(1.0Hz/cm^2)` : Photon density at r = 0, z= 0
+	- `θ0::Real ` : divergence of the beam  (computed from w0)
+	
+	"""
+	struct GaussianLaser 
+		laser::Laser
+		w0::Unitful.Length
+		zr::Unitful.Length
+		I0::typeof(1.0mW/cm^2)
+		ρ0::typeof(1.0Hz/cm^2)
+		
+		θ0::Real 
+
+		function glaser_(λ::typeof(1.0nm), P::typeof(1.0mW), w0::typeof(1.0mm))
+			zr = uconvert(mm, π * w0^2/λ)
+			I0 = uconvert(mW/cm^2, 2.0 * P/(π * w0^2))
+			ρ0 = uconvert(Hz/cm^2, n_photons(λ, 2.0 * P)/( π * w0^2))
+			θ0 = w0/zr
+			return zr, I0, ρ0, θ0
+		end
+		function GaussianLaser(laser, w0)
+			zr, I0, ρ0, θ0 = glaser_(laser.λ, laser.P, w0)
+			#zr = π * w0^2 / laser.λ
+			#I0 = 2 * laser.P / (π * w0^2)
+			#nγ = uconvert(Hz, laser.P / photon_energy(laser.λ))
+			#γ0 = 2 * nγ / (π * w0^2)
+			#θ0 = w0/zr
+			new(laser, w0, zr, I0, ρ0, θ0)
+		end
+	end
+
+# ╔═╡ bc6dfee2-bb55-48ca-a255-8dbbf35a37c2
+"""
+	gW(gl::GaussianLaser)
+
+returns the beam width: ``W(z) = W_0 \\sqrt{1 + (z/z_0)^2}``
+
+# Fields
+	- `gl::GaussianLaser`       : A gaussian Laser 
+
+"""
+function gW(gl::GaussianLaser)
+	Wz(z::Unitful.Length) = gl.w0 * sqrt(1.0 + (z/gl.zr)^2)
+	return Wz
+end
+
+# ╔═╡ 3e6fa7da-6dc3-4154-8722-227f98cc4e3b
+"""
+	spot_size(gl::GaussianLaser)
+
+returns 2*w0 that is the diameter of the beam waist, also called spot size   
+ 
+# Fields
+
+- `gl::GaussianLaser` : A gaussian laser 
+
+"""
+spot_size(gl::GaussianLaser)  = 2 * gl.w0
+
+# ╔═╡ 0cdec9f6-aca4-4344-8a9a-fe387b79fe20
+"""
+gI(gl::GaussianLaser)
+
+returns the beam Intensity: ``I(\\rho, z) = I_0 ( W_0 / W(z))^2 \\exp{-2 \\rho^2/W^2(z)}  ``
+
+# Fields
+- `gl::GaussianLaser`       : A gaussian Laser 
+
+"""
+function gI(gl::GaussianLaser)
+	Wz = gW(gl)
+	Irz(ρ::Unitful.Length, z::Unitful.Length) = gl.I0 * (gl.w0 / Wz(z))^2 * exp(-2.0 * ρ^2/Wz(z)^2)
+	return Irz
+end
+
+# ╔═╡ 4c24ad7d-36dc-498a-a3f8-04044f08df84
+"""
+	angular_divergence(gl::GaussianLaser)
+
+returns 2θ that is the beam angular divergence    
+ 
+# Fields
+
+- `gl::GaussianLaser` : A gaussian laser 
+
+"""
+angular_divergence(gl::GaussianLaser)  = 2 * gl.θ0
+
+# ╔═╡ ab9dec63-1b07-43c1-add7-289f2993888b
+"""
+	depth_of_focus(gl::GaussianLaser)
+
+returns 2 x zr   
+ 
+# Fields
+
+- `gl::GaussianLaser` : A gaussian laser 
+
+"""
+depth_of_focus(gl::GaussianLaser)  = 2 * gl.zr
+
+# ╔═╡ bf64a72b-91b3-4cac-a417-32b91e0c36dc
+
+md"""
+#### Define the laser beam
+"""
+
+# ╔═╡ b2dcc09e-38aa-40e7-9b04-2cfe53f54403
+md" ##### Set laser wavelength (in nm)"
+
+# ╔═╡ 62bd22b3-de8c-4363-9129-e32a4ae45894
+@bind ll NumberField(10.0^2:10.0^3; default=375.0)
+
+# ╔═╡ 5da96cd6-c805-4b72-bed2-7ecaf1f628d8
+md" #####  Set laser power (in mW)"
+
+# ╔═╡ 505a6513-942a-4031-a4f0-d679dd3a8f7d
+@bind lp NumberField(0.1:0.1:1000.0; default=1.0)
+
+# ╔═╡ 9c5d8255-e7af-47e4-9cd7-2d52308ea4e3
+md" ##### Set w0 at the objective lens or at the object plane (in mm)"
+
+# ╔═╡ 2a0f54ac-cd43-4590-88df-0865cd358ce3
+laser = CLaser(ll*nm, lp*mW)
+
+# ╔═╡ d922ae5f-cb2d-4156-9bfd-556f7b607b13
+@bind lw0 NumberField(10.0^-1:0.1:10.0^1; default=2.0)
+
+# ╔═╡ d6f1c1a6-3c62-456e-88d9-41031c781102
+glaser = GaussianLaser(laser, lw0*mm)
+
+# ╔═╡ 34c3e00e-f987-4ddf-9514-92099a00cf61
+spot_size(glaser)
+
+# ╔═╡ 2c0b1274-c190-48ec-bcdc-ebf17f957afc
+angular_divergence(glaser)
+
+# ╔═╡ 1e7e0317-001a-4c67-9444-c5b89a3e3314
+depth_of_focus(glaser)  
 
 # ╔═╡ 9eea388f-c453-480d-b022-2340fe880b89
 begin
@@ -246,11 +498,28 @@ p = MvNormal(center,sigmas/mm)
 
 X = range(-3*sigmas[1], 3*sigmas[1], length=100)
 Y = range(-3*sigmas[1], 3*sigmas[1], length=100)
+ZZ =range(-3*depth_of_focus(glaser) , 3*depth_of_focus(glaser) , length=100)
 Z = [pdf(p, [x,y]) for y in Y/mm, x in X/mm] # Note x-y "for" ordering
 p0=plot(X,Y,Z,st=:surface,xlabel="x (mm)",ylabel="y (mm)")
 
 p1=contourf(X, Y, Z, xlabel="x (mm)",ylabel="y (mm)")
 plot(p0,p1,size=(900,300))
+end
+
+# ╔═╡ c98f24d1-0550-4f69-aef7-1cd7b0762968
+begin
+Igl = gI(glaser)
+Ixy = [Igl(sqrt(x^2+y^2), 0.0mm) for y in Y, x in X]
+pp0=plot(X,Y,Ixy,st=:surface,xlabel="x",ylabel="y")
+
+pp1=contourf(X, Y, Ixy, xlabel="x",ylabel="y")
+plot(pp0,pp1,size=(900,300))
+end
+
+# ╔═╡ 1f496214-c15b-487a-b7b9-9becf6400385
+begin
+Iz  = [Igl(0.0*mm,z) for z in ZZ]
+plot(ZZ,Iz, label="Iz")
 end
 
 # ╔═╡ 03357bcc-b54d-4104-b2c5-cbc5ce31b721
@@ -834,9 +1103,37 @@ pois_rand
 # ╠═23bf7348-f059-4f84-b75d-2c55cc0a09cb
 # ╠═f3129831-54be-41e0-a30c-0d31b09a78b1
 # ╠═f2cf4a76-9a54-40d1-995f-c13ac357c341
+# ╠═c4dea97d-74bb-4467-86c8-814d85a01df9
+# ╠═ebf16df7-32d2-4c26-bf0f-f228d3fa7fff
+# ╠═d16bb7b3-749f-46a3-940e-9a3cbbe78bee
+# ╠═67cbfe76-80ac-446c-816e-613bdf024971
+# ╠═bc6dfee2-bb55-48ca-a255-8dbbf35a37c2
+# ╠═3e6fa7da-6dc3-4154-8722-227f98cc4e3b
+# ╠═0cdec9f6-aca4-4344-8a9a-fe387b79fe20
+# ╠═4c24ad7d-36dc-498a-a3f8-04044f08df84
+# ╠═ab9dec63-1b07-43c1-add7-289f2993888b
 # ╟─f506db9e-3fe3-4963-856a-be91d91e8266
+# ╠═2badeb9a-afa3-4a66-a06a-a7a88397756a
+# ╠═61d273f1-f3cb-41d1-b181-917753182515
+# ╠═f01189ac-8205-4e9c-b6d7-af8d70920016
+# ╠═9ad36d3b-d2e9-43ec-b698-cf5e032ec359
+# ╠═0adc1276-b6ce-49a2-a824-c1f2103e028e
+# ╠═bf64a72b-91b3-4cac-a417-32b91e0c36dc
+# ╠═b2dcc09e-38aa-40e7-9b04-2cfe53f54403
+# ╠═62bd22b3-de8c-4363-9129-e32a4ae45894
+# ╠═5da96cd6-c805-4b72-bed2-7ecaf1f628d8
+# ╠═505a6513-942a-4031-a4f0-d679dd3a8f7d
+# ╠═9c5d8255-e7af-47e4-9cd7-2d52308ea4e3
+# ╠═2a0f54ac-cd43-4590-88df-0865cd358ce3
+# ╠═d922ae5f-cb2d-4156-9bfd-556f7b607b13
+# ╠═d6f1c1a6-3c62-456e-88d9-41031c781102
+# ╠═34c3e00e-f987-4ddf-9514-92099a00cf61
+# ╠═2c0b1274-c190-48ec-bcdc-ebf17f957afc
+# ╠═1e7e0317-001a-4c67-9444-c5b89a3e3314
 # ╠═9eea388f-c453-480d-b022-2340fe880b89
 # ╠═63e4aa43-b606-4077-9205-e49fd7ac3b21
+# ╠═c98f24d1-0550-4f69-aef7-1cd7b0762968
+# ╠═1f496214-c15b-487a-b7b9-9becf6400385
 # ╟─03357bcc-b54d-4104-b2c5-cbc5ce31b721
 # ╠═cc82232e-fc86-413f-8b73-8044b4de6260
 # ╟─790af81b-45ce-4fae-ab0b-7fb52b87a2af
