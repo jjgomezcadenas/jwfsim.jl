@@ -251,6 +251,25 @@ function n_photons(λ::Unitful.Length, p::Unitful.Power)
 	uconvert(Hz, p / photon_energy(λ))
 end
 
+# ╔═╡ 4a8570bf-a575-45eb-be31-c4e46fdba0c7
+"""
+Populate field of view with molecules:
+
+# Fields
+
+- fovl : dimension of FOV
+- nmu2 : number of molecules for micron squared 
+"""
+function populate_fov(fovl::Integer, nmu2::Float64)
+	FOV = zeros(fovl, fovl)
+	for i in 1:fovl
+		for j in 1:fovl
+			FOV[i,j] = pois_rand(nmu2)
+		end
+	end
+	FOV
+end
+
 # ╔═╡ f506db9e-3fe3-4963-856a-be91d91e8266
 md""" 
 ## Laser specs
@@ -614,7 +633,7 @@ if sch=="Molarity"
 end
 
 # ╔═╡ e21f4df7-d8f1-41f7-9a52-c3bcea812cf8
-dxy = smm/uconvert(mm,1.0μm)
+dxy = Integer(smm/uconvert(mm,1.0μm))
 
 # ╔═╡ fcef739b-efe1-4a9a-8d84-2ad288cea5d9
 md"""
@@ -624,7 +643,7 @@ md"""
 """
 
 # ╔═╡ 5a1ed559-3c34-41cb-aee9-15899063e2f9
-
+MM =populate_fov(dxy, a_0)
 
 # ╔═╡ 39ec5a5f-8e06-4143-8016-39fc9020aaa1
 md"""
@@ -1103,17 +1122,6 @@ function tonpers(r::Float64, s::Float64, unit)
 	toncm2(r::Float64, s::Float64) / (uconvert(cm^-2, unit)/cm^-2)
 end
 
-# ╔═╡ a988f5a4-ce60-4820-abea-3e3c79854d89
-function populate_fov(fovl::Integer, nmu2::Float64)
-	FOV = zeros(fovl, fovl)
-	for i in 1:fovl
-		for j in 1:fovl
-			FOV[i,j] = pois_rand(nmu2)
-		end
-	end
-	FOV
-end
-
 # ╔═╡ c45c60cd-b581-4be1-bfbf-fca725221e4b
 
 
@@ -1169,6 +1177,7 @@ pois_rand
 # ╠═0cdec9f6-aca4-4344-8a9a-fe387b79fe20
 # ╠═4c24ad7d-36dc-498a-a3f8-04044f08df84
 # ╠═ab9dec63-1b07-43c1-add7-289f2993888b
+# ╠═4a8570bf-a575-45eb-be31-c4e46fdba0c7
 # ╟─f506db9e-3fe3-4963-856a-be91d91e8266
 # ╠═2badeb9a-afa3-4a66-a06a-a7a88397756a
 # ╠═61d273f1-f3cb-41d1-b181-917753182515
@@ -1207,9 +1216,9 @@ pois_rand
 # ╟─abe2369a-8a9a-4e0e-9707-4184e6d6f339
 # ╠═00cfc948-31e4-4d17-bf44-0a25c911cf68
 # ╠═e21f4df7-d8f1-41f7-9a52-c3bcea812cf8
+# ╠═18fc7474-c7b8-4092-9dfa-92f07ce3cb2a
 # ╠═fcef739b-efe1-4a9a-8d84-2ad288cea5d9
 # ╠═5a1ed559-3c34-41cb-aee9-15899063e2f9
-# ╠═18fc7474-c7b8-4092-9dfa-92f07ce3cb2a
 # ╠═39ec5a5f-8e06-4143-8016-39fc9020aaa1
 # ╠═84e73dfd-a9a3-4bd4-93ce-2fc4a4e78f1b
 # ╟─b32cd1dd-a93a-41e6-a9cd-92bb9295f3ad
@@ -1294,7 +1303,6 @@ pois_rand
 # ╠═5ab2275a-a576-4c2a-ae01-23748092d51a
 # ╠═cc6a3d4b-b032-4092-b29a-0f7b6854852b
 # ╠═03bf3bfb-2ec3-4ffa-9e83-37e21634a59d
-# ╠═a988f5a4-ce60-4820-abea-3e3c79854d89
 # ╠═c45c60cd-b581-4be1-bfbf-fca725221e4b
 # ╠═f893442d-230c-4ecd-b618-2ad89393963b
 # ╠═c0f7e1ad-37d2-4b42-8683-5d2088a8c4ea
