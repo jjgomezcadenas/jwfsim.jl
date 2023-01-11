@@ -524,10 +524,51 @@ end
 
 # ╔═╡ 03357bcc-b54d-4104-b2c5-cbc5ce31b721
 md""" 
-## Other specs
+## Objective
 
-Magnification, power losses throug the set up...
 """
+
+# ╔═╡ eb18cf5e-4bbb-4b8b-83da-348e79a3af4a
+"""
+	struct Objective
+
+Simple representation of a microscope objective
+
+# Fields
+- `NA::Float64`        : Numerical aperture
+- `M::Float64`         : Magnification
+- `f::typeof(1.0mm)`   : focal length 
+- `d::typeof(1.0mm)`   : entrance pupil diameter
+
+"""
+struct Objective
+    NA::Real 
+    M::Real 
+	f::Unitful.Length
+	d::Unitful.Length
+
+	function Objective(NA::Float64,  M::Float64)
+		new(NA, M, -1.0mm, -1.0mm)
+	end
+
+	function Objective(f::Unitful.Length, d::Unitful.Length, M::Float64)
+		ff = f / d   # https://www.eckop.com/resources/optics/numerical-aperture-and-f-number/
+		NA = 1.0/(2.0*ff)
+		new(NA, M, f,d)
+	end
+end
+
+# ╔═╡ 76a127c4-eabd-4be0-a83d-ebe9ae762cc1
+md" ##### Define objective NA"
+
+# ╔═╡ 0ee9a551-dfc1-45bd-8a7b-93ffdd2633b5
+@bind NA NumberField(0.1:0.1:1.0; default=0.5)
+
+# ╔═╡ 17fb76b1-f385-4360-9d58-b74ae85245dd
+md" ##### Define objective magnification"
+
+# ╔═╡ 8f769fdd-6546-4745-be19-e9ac8e7e1f08
+@bind MX NumberField(10.0:1.0:200.0; default=100.0)
 
 # ╔═╡ cc82232e-fc86-413f-8b73-8044b4de6260
 begin
@@ -536,6 +577,9 @@ begin
 	- Magnification= x $mag
 	"""
 end
+
+# ╔═╡ 91be4032-1813-445d-915c-46cca9cb0771
+ob = Objective(NA, MX)
 
 # ╔═╡ 790af81b-45ce-4fae-ab0b-7fb52b87a2af
 md"""
@@ -1134,8 +1178,14 @@ pois_rand
 # ╠═63e4aa43-b606-4077-9205-e49fd7ac3b21
 # ╠═c98f24d1-0550-4f69-aef7-1cd7b0762968
 # ╠═1f496214-c15b-487a-b7b9-9becf6400385
-# ╟─03357bcc-b54d-4104-b2c5-cbc5ce31b721
+# ╠═03357bcc-b54d-4104-b2c5-cbc5ce31b721
+# ╠═eb18cf5e-4bbb-4b8b-83da-348e79a3af4a
+# ╠═76a127c4-eabd-4be0-a83d-ebe9ae762cc1
+# ╠═0ee9a551-dfc1-45bd-8a7b-93ffdd2633b5
+# ╠═17fb76b1-f385-4360-9d58-b74ae85245dd
+# ╠═8f769fdd-6546-4745-be19-e9ac8e7e1f08
 # ╠═cc82232e-fc86-413f-8b73-8044b4de6260
+# ╠═91be4032-1813-445d-915c-46cca9cb0771
 # ╟─790af81b-45ce-4fae-ab0b-7fb52b87a2af
 # ╟─018997ec-0c72-4677-b6d1-e8dafa1c2811
 # ╟─0782a2c9-7d5a-49bc-8ddb-71c57238de8b
@@ -1148,15 +1198,15 @@ pois_rand
 # ╟─84e73dfd-a9a3-4bd4-93ce-2fc4a4e78f1b
 # ╟─b32cd1dd-a93a-41e6-a9cd-92bb9295f3ad
 # ╟─766d17b5-499a-4a28-8628-3031b023a851
-# ╟─a24aab57-2145-40de-bfd0-b768fef6d01d
-# ╟─f7f4ba8b-e1a6-4632-a785-767b2bfb646f
-# ╟─d9e3e919-f1b6-4b0b-9e07-04d5855f3587
+# ╠═a24aab57-2145-40de-bfd0-b768fef6d01d
+# ╠═f7f4ba8b-e1a6-4632-a785-767b2bfb646f
+# ╠═d9e3e919-f1b6-4b0b-9e07-04d5855f3587
 # ╟─3388900d-6fa1-4c0b-86b0-9ca541ad39ed
 # ╟─50c17b83-57f5-48dc-aaa1-22e16f627022
-# ╟─c4248750-7259-49ea-9aae-11ed7e3bf089
+# ╠═c4248750-7259-49ea-9aae-11ed7e3bf089
 # ╟─245205d3-ef94-46cf-ba0a-48810c201610
 # ╟─245c0ff7-22b2-47aa-969d-5cf4eca9831e
-# ╟─da45d069-b08d-4221-9e7d-32371090e94d
+# ╠═da45d069-b08d-4221-9e7d-32371090e94d
 # ╟─a45829e4-ac16-4e5d-9ce2-6007d62f37e8
 # ╟─907729d2-6b55-4afb-a3fd-5a450dd57a63
 # ╟─adebe61f-6355-46f3-b6d8-86fd50484366
