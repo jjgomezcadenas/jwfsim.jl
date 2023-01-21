@@ -65,3 +65,42 @@ import Unitful:
                 npxx, npxy, spxx, spxy, readout_nt, dct, ssensx, ssensy)
         end
     end
+
+
+
+# Wide field setup
+
+"""
+Returns the beam radius (beam waist) when a beam of diameter D
+and wavelength  λ is focused by a lens of focal distance f
+
+# Fields
+- `D::Unitful.Length`   : initial diameter of beam
+- `f::Unitful.Length`   : focal length of focusing lens.
+- `λ::Unitful.Length`   : wavelength of laser  
+
+"""
+w0f(λ::Unitful.Length, D::Unitful.Length, f::Unitful.Length) = 2.0 * λ * f/(π * D)
+
+
+"""
+
+Returns the beam radius (beam waist) in a wide field setup characterized by
+a focusing lens of focal length f and an objective with focusing length fMO.
+The incident beam of initial diameter d0 is expanded a factor G and 
+focused by the focusing lens at a distance f. 
+An infinity corrected microscope is then located at a distance FMO, 
+to produce a paralel beam o waist w0wf
+
+# Fields
+- `d0::Unitful.Length`  : initial diameter of beam
+- `f::Unitful.Length`   : focal length of focusing lens.
+- `fMO::Unitful.Length` : focal length of Objective.
+- `G::Float64`          : Beam expansion factor 
+-`σ::Float64            : 1.22 if defining w0 in terms of RMS, 1.05 if WHM  
+
+"""
+function w0wf(d0::Unitful.Length, f::Unitful.Length, fMO::Unitful.Length, 
+              G::Float64, σ::Float64=1.22) 
+	σ * π * d0 * G * fMO/(4.0 * f) 
+end

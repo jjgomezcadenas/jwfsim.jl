@@ -1,5 +1,6 @@
 module jwfsim
-
-# Write your package code here.
-
+using Revise
+include("laser.jl")
+include("setup.jl")
 end
+

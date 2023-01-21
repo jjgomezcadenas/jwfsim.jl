@@ -537,6 +537,7 @@ end
 
 # ╔═╡ 1f496214-c15b-487a-b7b9-9becf6400385
 begin
+ZZ2 =range(-100.0μm , 100.0μm , length=100)
 Iz  = [Igl(0.0*mm,z) for z in ZZ]
 plot(ZZ,Iz, label="Iz")
 end
@@ -645,6 +646,12 @@ md"""
 # ╔═╡ 5a1ed559-3c34-41cb-aee9-15899063e2f9
 MM =populate_fov(dxy, a_0)
 
+# ╔═╡ 2986d1bc-836b-4599-9f5d-b19074c02d85
+mean(MM)
+
+# ╔═╡ 0bb1cb0f-518c-4470-bb73-04d0b27371a8
+heatmap(MM)
+
 # ╔═╡ 39ec5a5f-8e06-4143-8016-39fc9020aaa1
 md"""
 Once we have the mean value of the number of molecules per micron square (which we assume to be the granularity of our simulation, and call nmu2), we can simulate the molecule distribution on the sample.
@@ -707,14 +714,26 @@ begin
 	"""
 end
 
+# ╔═╡ 8f7773d8-5b4c-4556-a2ff-df534ac94fb3
+ssensx
+
 # ╔═╡ 15f4b4ec-4ce2-49bb-bacf-1cc8a0beaf82
 fov = FOV(ccd, ob)
 
 # ╔═╡ 245c0ff7-22b2-47aa-969d-5cf4eca9831e
 md""" ## Molecule distribution in th FOV"""
 
+# ╔═╡ ea7be6c2-edcd-4b05-9498-3fe7a515fb94
+ccd.npxx
+
+# ╔═╡ 8a68e1fb-f25b-4aba-9df8-ad9e04b48727
+globj = GaussianLaser(laser, (lw0/ob.M)*mm)
+
 # ╔═╡ a45829e4-ac16-4e5d-9ce2-6007d62f37e8
 md""" ## Illumination in the FOV"""
+
+# ╔═╡ fa75bed8-216b-4a8b-bd47-e6772175a8b7
+spxfovx
 
 # ╔═╡ 907729d2-6b55-4afb-a3fd-5a450dd57a63
 begin
@@ -1255,6 +1274,8 @@ pois_rand
 # ╠═18fc7474-c7b8-4092-9dfa-92f07ce3cb2a
 # ╠═fcef739b-efe1-4a9a-8d84-2ad288cea5d9
 # ╠═5a1ed559-3c34-41cb-aee9-15899063e2f9
+# ╠═2986d1bc-836b-4599-9f5d-b19074c02d85
+# ╠═0bb1cb0f-518c-4470-bb73-04d0b27371a8
 # ╠═39ec5a5f-8e06-4143-8016-39fc9020aaa1
 # ╠═84e73dfd-a9a3-4bd4-93ce-2fc4a4e78f1b
 # ╟─b32cd1dd-a93a-41e6-a9cd-92bb9295f3ad
@@ -1262,16 +1283,20 @@ pois_rand
 # ╠═a24aab57-2145-40de-bfd0-b768fef6d01d
 # ╠═94cdcbf7-f082-4500-9638-d1a7741faefa
 # ╠═f7f4ba8b-e1a6-4632-a785-767b2bfb646f
+# ╠═8f7773d8-5b4c-4556-a2ff-df534ac94fb3
 # ╠═15f4b4ec-4ce2-49bb-bacf-1cc8a0beaf82
 # ╠═d9e3e919-f1b6-4b0b-9e07-04d5855f3587
 # ╟─3388900d-6fa1-4c0b-86b0-9ca541ad39ed
 # ╟─50c17b83-57f5-48dc-aaa1-22e16f627022
 # ╠═c4248750-7259-49ea-9aae-11ed7e3bf089
-# ╟─245205d3-ef94-46cf-ba0a-48810c201610
+# ╠═245205d3-ef94-46cf-ba0a-48810c201610
 # ╟─245c0ff7-22b2-47aa-969d-5cf4eca9831e
 # ╠═da45d069-b08d-4221-9e7d-32371090e94d
+# ╠═ea7be6c2-edcd-4b05-9498-3fe7a515fb94
+# ╠═8a68e1fb-f25b-4aba-9df8-ad9e04b48727
 # ╟─a45829e4-ac16-4e5d-9ce2-6007d62f37e8
-# ╟─907729d2-6b55-4afb-a3fd-5a450dd57a63
+# ╠═fa75bed8-216b-4a8b-bd47-e6772175a8b7
+# ╠═907729d2-6b55-4afb-a3fd-5a450dd57a63
 # ╟─adebe61f-6355-46f3-b6d8-86fd50484366
 # ╟─2e1ff7fa-1f63-4d52-87e2-b0d61fc1f85d
 # ╟─c1af380d-8f25-4e3b-b5b3-5ac78f0a9913
