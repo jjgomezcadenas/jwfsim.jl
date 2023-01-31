@@ -105,6 +105,19 @@ end
 
 
 """
+Returns the diffractive limit for a laser with wavelength λ 
+filling the entrance pupil of an objective with NA.    
+
+# Fields
+
+- `λ::Float64`  : λ of laser beam
+- `NA::Float64` : NA of the objective, used to focus the laser.
+
+"""
+diffractive_limit(λ::Float64, NA::Float64) = λ / (2 * NA)
+
+
+"""
 Returns the beam width: ``W(z) = W_0 \\sqrt{1 + (z/z_0)^2}``
 
 # Fields
@@ -174,5 +187,60 @@ Returns 2z0
 - `gl::GaussianLaser` : A gaussian laser 
 
 """
+
 depth_of_focus(gl::GaussianLaser)  = 2 * gl.z0
 
+
+"""
+Returns the waist of a gaussian laser with parameter w0 resulting 
+from focusing a paralell laser beam (depth of focus of beam
+much longer than focal length of lens) with a lens of
+focal length f.
+
+# Fields
+
+- `glaser::GaussianLaser` : A  gaussian laser 
+- `f::Unitful.length`     : focal length of focusing lens. 
+
+Returns the beam radius (beam waist) when a 
+a paralell laser beam (depth of focus of beam
+much longer than focal length of lens) diameter D
+and wavelength  λ is focused by a lens of focal distance f
+
+# Fields
+- `D::Unitful.Length`   : initial diameter of beam
+- `f::Unitful.Length`   : focal length of focusing lens.
+- `λ::Unitful.Length`   : wavelength of laser  
+
+"""
+w0f(glaser::GaussianLaser, 
+    λ::Unitful.Length) = λ * f /(π * glaser.w0) 
+	
+w0f(λ::Unitful.Length, D::Unitful.Length, 
+    f::Unitful.Length) = 2.0 * λ * f/(π * D)
+
+
+# Wide field setup
+
+"""
+Returns the beam radius (beam waist) in a wide field setup characterized by
+a focusing lens of focal length f and an objective with focusing length fMO.
+The incident beam of initial diameter d0 is expanded a factor G and 
+focused by the focusing lens at a distance f. 
+An infinity corrected microscope is then located at a distance FMO, 
+to produce a paralel beam o waist w0wf
+
+# Fields
+- `d0::Unitful.Length`  : initial diameter of beam
+- `f::Unitful.Length`   : focal length of focusing lens.
+- `fMO::Unitful.Length` : focal length of Objective.
+- `G::Float64`          : Beam expansion factor 
+-`σ::Float64            : 1.22 if defining w0 in terms of RMS, 1.05 if WHM  
+
+"""
+function w0wf(d0::Unitful.Length, f::Unitful.Length, fMO::Unitful.Length, 
+              G::Float64, σ::Float64=1.22) 
+	σ * π * d0 * G * fMO/(4.0 * f) 
+end
+                     
+                     

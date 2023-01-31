@@ -259,10 +259,14 @@ load("gaussianBeamFillingLens.png")
 md"""
 ### Waist fills the focusing lens
 
-$w_0' = \frac{\lambda}{\pi w_0}$
+$w_0' = \frac{\lambda}{\pi w_0} f$
 
 $z' = f$
 """
+
+# ╔═╡ 586d1283-0d78-4d3b-b6ea-59795a790034
+jwf.jwfsim.w0f(325*nm, 3.9*mm, 5.0*mm)
+
 
 # ╔═╡ c24a184e-ef7a-4e9d-8e4e-68c62abb84f2
 load("gaussianBeamFillingLens2.png")
@@ -286,7 +290,7 @@ md"""
 $w_0 = \frac{2\lambda f}{\pi D}$
 $d_0 = 2 w_0' = \frac{1.22\lambda f_{MO}}{w_0}$
 $w_0' =\frac{1.22\pi D}{4} \frac{f_{MO}}{f'}$
-$w_0' =\frac{1.05\pi D}{4} \frac{f_{MO}}{f'}$ (FWHM)
+$w_0' =\frac{1.05\pi D}{4} \frac{f_{MO}}{f'} {\rm (~FWHM)}$
 """
 
 # ╔═╡ f36c1871-8d07-465f-b563-63e8f249e4b9
@@ -405,6 +409,18 @@ md"""
 # ╔═╡ 3b2b9d9e-9ae3-415d-9bb8-fdae2b87c084
 gwf = jwf.jwfsim.GaussianLaser(lsrwf, w0M0)
 
+# ╔═╡ 9297bde3-8f5c-4c0f-8470-2589b47fd033
+gwf0 = jwf.jwfsim.GaussianLaser(lsrwf, w0f)
+
+# ╔═╡ 6c6debb8-c84a-4296-8103-5664508d804d
+gwf.w0/gwf0.w0
+
+# ╔═╡ ba4afc27-e2a9-4a4a-97ca-ac46e9d6586a
+gwf.ρ0/gwf0.ρ0
+
+# ╔═╡ b3465f38-4dc1-4691-816a-99059f4fec7c
+gwf
+
 # ╔═╡ 688f1328-90a8-4512-9349-8d18bc0bdd35
 md"""
 ## Imaging Ru and Ir sensors
@@ -440,6 +456,7 @@ md"""
 # ╠═a4297af5-da85-4feb-b426-665033451cce
 # ╠═58a97035-f56e-4696-a2e0-b98872b6b4d4
 # ╠═e7c08954-20bd-4560-bc2a-c6521630221a
+# ╠═586d1283-0d78-4d3b-b6ea-59795a790034
 # ╠═c24a184e-ef7a-4e9d-8e4e-68c62abb84f2
 # ╠═7d7c53ab-5349-443e-834f-42d5905a2fc7
 # ╠═0e5da5ee-d0d9-4a66-81d0-8aea06188669
@@ -468,4 +485,8 @@ md"""
 # ╠═9ccec6ab-0c97-4271-b87e-8327f800c1fa
 # ╠═e924e28a-0829-4209-a4d6-8a87d800b6eb
 # ╠═3b2b9d9e-9ae3-415d-9bb8-fdae2b87c084
+# ╠═9297bde3-8f5c-4c0f-8470-2589b47fd033
+# ╠═6c6debb8-c84a-4296-8103-5664508d804d
+# ╠═ba4afc27-e2a9-4a4a-97ca-ac46e9d6586a
+# ╠═b3465f38-4dc1-4691-816a-99059f4fec7c
 # ╠═688f1328-90a8-4512-9349-8d18bc0bdd35
