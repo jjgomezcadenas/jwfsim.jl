@@ -14,8 +14,44 @@ import Unitful:
 
 	import PhysicalConstants.CODATA2018: N_A
 
-    """
 
+"""
+Simple representation of a microscope objective
+
+# Fields
+- `NA::Float64`          : Numerical aperture
+- `M::Float64`           : Magnification
+- `f::Unitful.Length`    : focal length 
+- `d::Unitful.Length`    : entrance pupil diameter
+- `wd::Unitful.Length`   : working distance
+- `T::Float64`           : Transmittance
+
+"""
+struct Objective
+    NA::Float64 
+    M::Float64 
+	f::Unitful.Length
+	d::Unitful.Length
+    wd::Unitful.Length
+    T::Float64 
+
+    function Objective(NA::Float64,  M::Float64, f::Unitful.Length, d::Unitful.Length,
+                       wd::Unitful.Length, T::Float64)
+		new(NA, M, f, d, wd,T)
+	end
+
+	function Objective(NA::Float64,  M::Float64)
+		new(NA, M, -1.0mm, -1.0mm, -1.0mm, 1.0)
+	end
+
+	function Objective(f::Unitful.Length, d::Unitful.Length, M::Float64)
+		ff = f / d   # https://www.eckop.com/resources/optics/numerical-aperture-and-f-number/
+		NA = 1.0/(2.0*ff)
+		new(NA, M, f,d, -1.0mm, 1.0)
+	end
+end
+
+    """
     Defines a CCD
     
     # Fields
@@ -65,3 +101,73 @@ import Unitful:
                 npxx, npxy, spxx, spxy, readout_nt, dct, ssensx, ssensy)
         end
     end
+
+
+
+"""
+Return the efficiency of a generic CCD as a function of wavelength.
+
+# Fields
+
+- `lmin::Float64=350.0` : Minimum wavelength for which efficiency is defined
+- `lmax::Float64=350.0` : Maximum wavelength for which efficiency is defined
+
+"""
+function ϵccd(lmin::Unitful.Length=350.0nm, 
+              lmax::Unitful.Length=1000.0nm)
+	function eff(l::Unitful.Length)
+        ll    = uconvert(NoUnits, l/nm)
+        llmin = uconvert(NoUnits, lmin/nm)
+        llmax = uconvert(NoUnits, lmax/nm)
+		if ll < llmin || ll > llmax
+			return 0.
+		else
+			wl = 350.:50.:1000.
+			ϵ = [0.3, 0.4,0.65,0.78,0.82,0.82,0.8,0.72,0.62,0.5,0.37,
+			  0.24,0.12,0.07]
+			e = CubicSplineInterpolation(wl, ϵ)
+			return e(ll)
+		end
+	end
+	return eff
+end
+
+
+"""
+Compute the fraction of photons that make it through an iris
+of diameter D located at a distance d from the emission point.
+
+# Fields
+
+- `d::Float64`   : distance between emission point and iris
+- `D::Float64`   : Diameter of iris
+
+"""
+function geometrical_acceptance(d::Float64, D::Float64)
+	return 0.5(1. - d/sqrt(d^2 + (D/2.)^2))
+end
+
+
+"""
+Compute the geometrical transmission of an objective (depends only of NA).
+
+# Fields
+
+- `objective::Objective` : Objective
+
+"""
+function geometrical_transmission(objective::Objective)
+	A = objective.NA
+	A <=1 ? (1 - sqrt(1 - A^2)) /2 : 0.5
+end
+
+
+"""
+Compute the transmission of an objective (includes average transmission).
+
+# Fields
+
+- `objective::Objective` : Objective
+
+"""
+transmission(obj::Objective) = geometrical_transmission(obj) * obj.T^2

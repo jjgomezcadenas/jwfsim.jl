@@ -66,3 +66,33 @@ begin
 	mecrusldf[!, "λ"] = mecrusldf[!, "λ_nm"] .* nm
 	mecrusldf
 end
+
+md"""
+## Define fluorophore and cross section
+"""
+
+rusl2 = jwf.jwfsim.Fluorophore(mecrusldf.λ[1], mecrusldf.λ[end], 
+mecrusldf.ϵ, 0.11)
+
+xsrusl = jwf.jwfsim.xsecfl(rusl2)
+
+md"""
+## Load Ir cross section data frames
+"""
+mecirsl ="VS020_IrSL_1E-5_molar_extinction_coefficient.csv"
+
+begin
+	mecirsldf = sort(jwf.jwfsim.load_df_from_csv(pdata, mecirsl, jwf.jwfsim.spG))
+	mecirsldf[!, "ϵ"] = mecirsldf[!, "e_M_1_cm_1"] .* cm^-1 .* M^-1
+	mecirsldf[!, "λ"] = mecirsldf[!, "λ_nm"] .* nm
+	mecirsldf
+end
+
+irsl = jwf.jwfsim.Fluorophore(mecirsldf.λ[1], mecirsldf.λ[end], mecirsldf.ϵ, 0.37)
+xsirsl = jwf.jwfsim.xsecfl(irsl)
+
+begin
+	plot(mecirsldf.λ, xsirsl.(mecirsldf.λ)*1e+16, label= "Xsec * 1e+16", lw=2)
+	xlims!(200.,550.)
+	
+end

@@ -15,14 +15,18 @@ import Unitful:
 	import PhysicalConstants.CODATA2018: N_A
 
 
+GM = 1e-50 * cm^2*cm^2*s
 """	
 Represent a fluorescent molecule
 
 # Fields
-- `λ0::Units (nm)`           : minimum λ 
-- `λl::Units (nm)`           : maximum λ
-- `ϵ::Units(``cm^{-1} M^{-1}``)` : molar extinction coefficient
-- `Q::Float64`                   : Quantum efficiency
+- `λ0::Units (nm)`                : minimum λ 
+- `λl::Units (nm)`                : maximum λ
+- `ϵ::Units(``cm^{-1} M^{-1}``)`  : molar extinction coefficient
+- `Q::Float64`                    : Quantum efficiency
+- σ ::typeof(cm^4*s)              : TPA cross section
+- β ::typeof(1.0cm/W)             : TPA absorption coefficient 
+
 
 """
 struct Fluorophore
@@ -30,6 +34,19 @@ struct Fluorophore
 	λl::Unitful.Length
     ϵ::Vector{typeof(1.0/(cm*M))}
     Q::Float64
+    σ ::typeof(1.0*cm^4*s)
+    
+    function Fluorophore(λ0::Unitful.Length, λl::Unitful.Length, 
+                         ϵ::Vector{typeof(1.0/(cm*M))}, Q::Float64)
+        new(λ0, λl, ϵ, Q, 1.0*GM)
+    end 
+
+    function Fluorophore(λ0::Unitful.Length, λl::Unitful.Length, 
+                         ϵ::Vector{typeof(1.0/(cm*M))}, Q::Float64,
+                         σ ::typeof(1.0*cm^4*s))
+        new(λ0, λl, ϵ, Q, σ)
+    end
+
 end
 
 
@@ -66,4 +83,5 @@ function xsecfl(fl::Fluorophore)
 	feps = icam(fl.λ0/nm, fl.λl/nm, fl.ϵ ./(cm^-1*M^-1))
 	return xs
 end
+
 

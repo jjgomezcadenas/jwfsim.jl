@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.19
+# v0.19.25
 
 using Markdown
 using InteractiveUtils
@@ -81,7 +81,7 @@ md"""
 pdata = joinpath(ENV["JWfSim"], "data")
 
 # ╔═╡ 41e2bf4a-7543-4481-9f78-bff2629b7b55
-mecrusl ="VS014_RuSL_1E-5_molar_extinction coefficient.csv"
+mecrusl ="VS014_RuSL_1E-5_molar_extinction_coefficient.csv"
 
 # ╔═╡ 22edeacc-9aff-45df-9c61-750f8386b84f
 #run(`ls /Users/jjgomezcadenas/Projects/jwfsim/data/`)

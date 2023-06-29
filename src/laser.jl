@@ -6,7 +6,7 @@ using PhysicalConstants.CODATA2018
 import Unitful:
     nm, μm, mm, cm, m, km,
     mg, g, kg,
-    ps, ns, μs, ms, s, minute, hr, d, yr, Hz, kHz, MHz, GHz,
+    fs, ps, ns, μs, ms, s, minute, hr, d, yr, Hz, kHz, MHz, GHz,
     eV,
     μJ, mJ, J,
 	μW, mW, W
@@ -27,6 +27,23 @@ struct CLaser <: Laser
 	P::Unitful.Power
 end
 
+
+"""
+Simple representation of a pulsed laser
+
+# Fields
+- `f::typeof(1.0nm)`  : Laser frequency
+- `τ::typeof(1.0mW)`  : time
+
+"""
+struct PLaser <: Laser
+	λ::Unitful.Length
+	P::Unitful.Power
+    f::typeof(1.0*MHz)
+    τ::typeof(1.0*fs)
+end
+
+    
 """
 	Representation of a Gaussian laser defined by a laser, 
     the location of the waist (z0) and the waist radius (w0)  
@@ -56,7 +73,7 @@ end
 			return zr, I0, ρ0, θ0
 		end
 
-		function GaussianLaser(laser::Laser, w0::Unitful.Length)
+        function GaussianLaser(laser::Laser, w0::Unitful.Length)
 			z0, I0, ρ0, θ0 = glaser_(laser.λ, laser.P, w0)
 			new(laser, w0, z0, I0, ρ0, θ0)
 		end
@@ -103,6 +120,10 @@ function photon_energy(λ::Unitful.Length)
 	uconvert(eV, λ, Spectral())
 end
 
+
+function energy_per_pulse(lsr::PLaser)
+	lsr.P * lsr.f
+end
 
 """
 Returns the diffractive limit for a laser with wavelength λ 
@@ -213,8 +234,7 @@ and wavelength  λ is focused by a lens of focal distance f
 - `λ::Unitful.Length`   : wavelength of laser  
 
 """
-w0f(glaser::GaussianLaser, 
-    λ::Unitful.Length) = λ * f /(π * glaser.w0) 
+w0f(glaser::GaussianLaser, obj::Objective) = glaser.laser.λ * obj.f /(π * glaser.w0) 
 	
 w0f(λ::Unitful.Length, D::Unitful.Length, 
     f::Unitful.Length) = 2.0 * λ * f/(π * D)
