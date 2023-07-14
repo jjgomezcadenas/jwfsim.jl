@@ -16,6 +16,12 @@ import Unitful:
 
 
 GM = 1e-50 * cm^2*cm^2*s
+
+"""
+Abstract type representing a Molecular Sensor
+"""
+abstract type MSensor end
+
 """	
 Represent a fluorescent molecule
 
@@ -29,7 +35,7 @@ Represent a fluorescent molecule
 
 
 """
-struct Fluorophore
+struct Fluorophore <: MSensor
     λ0::Unitful.Length 
 	λl::Unitful.Length
     ϵ::Vector{typeof(1.0/(cm*M))}
@@ -58,8 +64,8 @@ The function interpolates function icam to the fluorophore data
 describing the molar extinction coefficient, the computes the cross section
 transforming to proper units and multiplying by the quantum efficiency, 
 """
-function xsecfl(fl::Fluorophore)
-    function icam(λ0::Real, λl::Real, vϵ::Vector{Float64})
+function xsecfl(fl::Fluorophore, istep::Real)
+    function icam(λ0::Real, λl::Real, step::Real, vϵ::Vector{Float64})
         function gfpdf_(fi, xmin::Real, xmax::Real)
             function fn(λ::Unitful.Length)
                 x = uconvert(NoUnits, λ/nm)
@@ -71,7 +77,7 @@ function xsecfl(fl::Fluorophore)
             end
             return fn
         end
-        wl=λ0:λl
+        wl=λ0:step:λl
         li = LinearInterpolation(wl, vϵ)
         return gfpdf_(li, λ0, λl)
     end
@@ -80,8 +86,51 @@ function xsecfl(fl::Fluorophore)
 		return log(10) * uconvert(cm^2/mol, fl.Q * feps(λ)) / N_A
 	end
 
-	feps = icam(fl.λ0/nm, fl.λl/nm, fl.ϵ ./(cm^-1*M^-1))
+	feps = icam(fl.λ0/nm, fl.λl/nm, istep, fl.ϵ ./(cm^-1*M^-1))
 	return xs
+end
+
+
+"""
+
+Simplified representation of a fluorescent molecule
+
+# Fields
+- `ϵ::Units(``cm^{-1} M^{-1}``)` : molar extinction coefficient
+- `Q::Float64`                   : Quantum efficiency
+"""
+struct SFluorophore <: MSensor
+    ϵ::typeof(1.0/(cm*M))
+    Q::Float64
+	σ::typeof(1.0cm^2)
+	function Fluorophore(ex, en, ϵ, Q)
+		σ = log(10) * uconvert(cm^2/mol, ϵ) / N_A
+		new(ϵ, Q, σ)
+	end
+end
+
+
+"""
+
+Simplified representation of a phosporescent molecule
+
+# Fields
+- `ϵ::Units(``cm^{-1} M^{-1}``)` : molar extinction coefficient
+- `Q::Float64`                   : Quantum efficiency
+- `λ::Unitful.Length`            : Lifetime of triplet state
+- `ϵλ::Float64`                  : Fraction of triplet
+"""
+struct SPhospho <: MSensor
+    ϵ::typeof(1.0/(cm*M))
+    Q::Float64
+    λ::Unitful.Length
+    ϵλ::Float64
+	σ::typeof(1.0cm^2)
+    
+	function Fluorophore(ϵ, Q, λ, ϵλ)
+		σ = log(10) * uconvert(cm^2/mol, ϵ) / N_A
+		new(ϵ, Q, λ, ϵλ, σ)
+	end
 end
 
 

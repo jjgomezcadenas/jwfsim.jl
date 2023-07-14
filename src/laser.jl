@@ -12,6 +12,32 @@ import Unitful:
 	μW, mW, W
 
 
+	"""
+	struct Fov
+
+Represent a field of view
+
+# Fields
+- `d::Unitful.Length`  : diameter of Fov
+- `z::Unitful.Length`  : thickness
+- `a::Unitful.Area`    : area (computed)
+- `v::Unitful.Volume`  : volume (computed)
+
+"""
+struct Fov
+    d::Unitful.Length
+    z::Unitful.Length
+	a::Unitful.Area
+    v::Unitful.Volume
+
+	function Fov(d,z)
+		a = π * (d/2.)^2
+		v = a * z
+		new(d,z,a,v)
+	end
+end
+
+
 abstract type Laser end
 
 """
@@ -111,6 +137,40 @@ function n_photons(λ::Unitful.Length, p::Unitful.Power)
 end
 
 """
+	photon_density(λ::Unitful.Length, p::Unitful.Power, a::Unitful.Area)
+
+number of photons per unit time per unit area
+
+# Fields
+
+- `λ::Unitful.Length` : photon wavelength
+- `p::Unitful.Power`  : Power
+- `a::Unitful.Area`   : Area
+
+"""
+
+function photon_density(λ::Unitful.Length, p::Unitful.Power, a::Unitful.Area)
+	return n_photons(λ, p)/ a
+end
+
+
+"""
+	photon_density(l::Laser, fov::Fov)
+
+number of photons per unit time per unit area, in a Fov illuminated by a laser
+
+# Fields
+
+- `laser::Laser` : Laser
+- `fov::Fov`     : Field of view
+
+"""
+function photon_density(laser::Laser, fov::Fov)
+	return n_photons(laser) / fov.a
+end
+
+
+"""
 Given wavelength of photon return its energy.
 # Fields
 - `λ::Unitful.Length`  : Photon wavelength
@@ -135,7 +195,19 @@ filling the entrance pupil of an objective with NA.
 - `NA::Float64` : NA of the objective, used to focus the laser.
 
 """
-diffractive_limit(λ::Float64, NA::Float64) = λ / (2 * NA)
+diffractive_limit(λ::Float64, NA::Float64; ff=1.22) = ff * λ / (2 * NA)
+
+diffractive_limit(λ::Unitful.Length, NA::Float64; ff=1.22) = ff * λ / (2 * NA)
+
+
+"""
+Depth of penetration assuming a gaussian laser that fills fully the
+objective (e.g, diffractive limit)
+
+"""
+function diffractive_limit_zr(λ::Unitful.Length, NA::Float64)
+	λ/(π * NA^2)
+end
 
 
 """
@@ -173,7 +245,8 @@ Returns the beam Intensity: ``I(\\rho, z) = I_0 ( W_0 / W(z))^2 \\exp{-2 \\rho^2
 """
 function I(gl::GaussianLaser)
 	Wz = W(gl)
-	Irz(ρ::Unitful.Length, z::Unitful.Length) = gl.I0 * (gl.w0 / Wz(z))^2 * exp(-2.0 * ρ^2/Wz(z)^2)
+	Irz(ρ::Unitful.Length, z::Unitful.Length) = 2.0 * gl.laser.P / (π * Wz(z))^2 * exp(-2.0 * ρ^2/Wz(z)^2)
+	#Irz(ρ::Unitful.Length, z::Unitful.Length) = gl.I0 * (gl.w0 / Wz(z))^2 * exp(-2.0 * ρ^2/Wz(z)^2)
 	return Irz
 end
 
@@ -234,7 +307,7 @@ and wavelength  λ is focused by a lens of focal distance f
 - `λ::Unitful.Length`   : wavelength of laser  
 
 """
-w0f(glaser::GaussianLaser, obj::Objective) = glaser.laser.λ * obj.f /(π * glaser.w0) 
+w0f(glaser::GaussianLaser, obj::Objective) = 2.0 * glaser.laser.λ * obj.f /(π * glaser.w0) 
 	
 w0f(λ::Unitful.Length, D::Unitful.Length, 
     f::Unitful.Length) = 2.0 * λ * f/(π * D)

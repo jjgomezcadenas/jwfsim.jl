@@ -4,5 +4,6 @@ include("setup.jl")
 include("laser.jl")
 include("dffunctions.jl")
 include("fluorophores.jl")
+include("histos.jl")
 end
 

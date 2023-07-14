@@ -134,6 +134,35 @@ end
 
 
 """
+Return the efficiency of a a counting photon APD as a function of wavelength.
+
+# Fields
+
+- `lmin::Float64=400.0` : Minimum wavelength for which efficiency is defined
+- `lmax::Float64=1000.0` : Maximum wavelength for which efficiency is defined
+
+"""
+function ϵapd(lmin::Unitful.Length=400.0nm, 
+              lmax::Unitful.Length=1000.0nm)
+	function eff(l::Unitful.Length)
+        ll    = uconvert(NoUnits, l/nm)
+        llmin = uconvert(NoUnits, lmin/nm)
+        llmax = uconvert(NoUnits, lmax/nm)
+		if ll < llmin || ll > llmax
+			return 0.
+		else
+			wl = 400.0:50.0:1000.0
+			ϵ = [0.1, 0.3,0.4,0.6,0.65,0.7,0.7,0.65,0.62,0.5,0.4,
+			  0.25,0.1]
+			e = CubicSplineInterpolation(wl, ϵ)
+			return e(ll)
+		end
+	end
+	return eff
+end
+
+
+"""
 Compute the fraction of photons that make it through an iris
 of diameter D located at a distance d from the emission point.
 
@@ -171,3 +200,87 @@ Compute the transmission of an objective (includes average transmission).
 
 """
 transmission(obj::Objective) = geometrical_transmission(obj) * obj.T^2
+
+
+"""
+Return the tranmission of the MUE12900 as function of wavelength.
+
+# Fields
+
+- `lmin::Float64=400.0` : Minimum wavelength for which efficiency is defined
+- `lmax::Float64=1000.0` : Maximum wavelength for which efficiency is defined
+
+"""
+function tmue12900(lmin::Unitful.Length=300.0nm, 
+                   lmax::Unitful.Length=850.0nm)
+	function eff(l::Unitful.Length)
+        ll    = uconvert(NoUnits, l/nm)
+        llmin = uconvert(NoUnits, lmin/nm)
+        llmax = uconvert(NoUnits, lmax/nm)
+		if ll < llmin || ll > llmax
+			return 0.
+		elseif ll <= 440 && ll >= llmin
+            wl = 300.0:20.0:440.0
+            ϵ = [0.0, 0.03, 0.22, 0.64, 0.78, 0.82 ,0.84, 0.84]
+			e = CubicSplineInterpolation(wl, ϵ)
+            return e(ll)
+        elseif ll > 440 && ll < 450
+            return 0.85
+        else
+            wl = 450.0:50.0:850.0
+            ϵ = [0.86, 0.87, 0.87, 0.86, 0.84, 0.80 ,0.84, 0.8, 0.60]
+			e = CubicSplineInterpolation(wl, ϵ)
+			return e(ll)
+		end
+	end
+	return eff
+end
+
+
+"""
+Return the tranmission of the MUE12900 as function of wavelength.
+
+# Fields
+
+- `lmin::Float64=400.0` : Minimum wavelength for which efficiency is defined
+- `lmax::Float64=1000.0` : Maximum wavelength for which efficiency is defined
+
+"""
+function tLMM40VUV(lmin::Unitful.Length=300.0nm, 
+                   lmax::Unitful.Length=850.0nm)
+	function eff(l::Unitful.Length)
+        ll    = uconvert(NoUnits, l/nm)
+        llmin = uconvert(NoUnits, lmin/nm)
+        llmax = uconvert(NoUnits, lmax/nm)
+		if ll < llmin || ll > llmax
+			return 0.
+        else
+            return 0.85
+		end
+	end
+	return eff
+end
+
+### define some elements of the setup:
+
+# EPL 375 laser
+
+function epl375(f=1.0MHz)
+    λ = 370.0nm
+    fr = 20.0MHz
+    pr = 150.0μW 
+    P = pr/(fr/f)
+    tau = 75.0ps
+    PLaser(λ, P, f, tau)
+end
+
+#PQ LDHLDH375B
+
+function pqLDH375B(f=1.0MHz)
+    λ = 376.0nm
+    fr = 80.0MHz
+    pr = 7.4mW 
+    P = pr/(fr/f)
+    tau = 56.0ps
+    PLaser(λ, P, f, tau)
+end
